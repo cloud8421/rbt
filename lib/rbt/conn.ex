@@ -2,6 +2,7 @@ defmodule Rbt.Conn do
   @behaviour :gen_statem
 
   @default_start_opts [
+    # TODO: exponential backoff with reset
     retry_interval: 5000,
     heartbeat: 60,
     connection_timeout: 5000
@@ -26,6 +27,11 @@ defmodule Rbt.Conn do
   @spec start_link(url, start_opts) :: :gen_statem.start_ret()
   def start_link(uri, start_opts) do
     :gen_statem.start_link(__MODULE__, {uri, start_opts}, [])
+  end
+
+  @spec get(:gen_statem.server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
+  def get(ref) do
+    :gen_statem.call(ref, :get)
   end
 
   def init({uri, start_opts}) do
@@ -56,6 +62,10 @@ defmodule Rbt.Conn do
     end
   end
 
+  def disconnected({:call, from}, :get, _data) do
+    {:keep_state_and_data, {:reply, from, {:error, :disconnected}}}
+  end
+
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn == pid do
       retry_interval = Keyword.get(data.start_opts, :retry_interval)
@@ -64,6 +74,10 @@ defmodule Rbt.Conn do
     else
       :keep_state_and_data
     end
+  end
+
+  def connected({:call, from}, :get, data) do
+    {:keep_state_and_data, {:reply, from, {:ok, data.conn}}}
   end
 
   defp build_connection_uri(base_uri, uri_opts) do

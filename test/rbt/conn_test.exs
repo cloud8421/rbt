@@ -34,4 +34,18 @@ defmodule Rbt.ConnTest do
       assert {:disconnected, %Rbt.Conn{}} = :sys.get_state(pid)
     end
   end
+
+  describe "connection get" do
+    test "returns connection when connected" do
+      {:ok, pid} = Conn.start_link("amqp://guest:guest@localhost:5672/rbt-test")
+
+      assert {:ok, %AMQP.Connection{}} = Conn.get(pid)
+    end
+
+    test "returns error when disconnected" do
+      {:ok, pid} = Conn.start_link("amqp://guest:guest@localhost:5672/rbt-non-existing")
+
+      assert {:error, :disconnected} == Conn.get(pid)
+    end
+  end
 end
