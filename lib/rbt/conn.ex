@@ -2,15 +2,16 @@ defmodule Rbt.Conn do
   @behaviour :gen_statem
 
   alias Rbt.Conn.URI, as: ConnURI
+  alias Rbt.Backoff
 
   @default_start_opts [
-    # TODO: exponential backoff with reset
     retry_interval: 5000,
     heartbeat: 60,
     connection_timeout: 5000
   ]
 
   defstruct start_opts: @default_start_opts,
+            backoff_intervals: Backoff.default_intervals(),
             uri: nil,
             conn: nil,
             mon_ref: nil
@@ -56,11 +57,20 @@ defmodule Rbt.Conn do
     case AMQP.Connection.open(uri_with_options) do
       {:ok, conn} ->
         mon_ref = Process.monitor(conn.pid)
-        {:next_state, :connected, %{data | conn: conn, mon_ref: mon_ref}}
+
+        new_data =
+          data
+          |> Backoff.reset!()
+          |> Map.put(:conn, conn)
+          |> Map.put(:mon_ref, mon_ref)
+
+        {:next_state, :connected, new_data}
 
       _error ->
         # TODO: pass failure to diagnostics
-        {:next_state, :disconnected, data}
+        {delay, new_data} = Backoff.next_interval(data)
+        action = {:timeout, delay, :try_connect}
+        {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     end
   end
 
@@ -70,9 +80,9 @@ defmodule Rbt.Conn do
 
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn == pid do
-      retry_interval = Keyword.get(data.start_opts, :retry_interval)
-      action = {:timeout, retry_interval, :try_connect}
-      {:next_state, :disconnected, %{data | conn: nil, mon_ref: nil}, action}
+      {delay, new_data} = Backoff.next_interval(data)
+      action = {:timeout, delay, :try_connect}
+      {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     else
       :keep_state_and_data
     end
