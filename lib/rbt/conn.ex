@@ -4,32 +4,31 @@ defmodule Rbt.Conn do
   alias Rbt.Conn.URI, as: ConnURI
   alias Rbt.Backoff
 
-  @default_start_opts [
-    retry_interval: 5000,
+  @default_open_opts [
     heartbeat: 60,
     connection_timeout: 5000
   ]
 
-  defstruct start_opts: @default_start_opts,
+  defstruct open_opts: @default_open_opts,
             backoff_intervals: Backoff.default_intervals(),
             uri: nil,
             conn: nil,
             mon_ref: nil
 
   @type url :: String.t()
-  @type start_opts :: Keyword.t()
+  @type open_opts :: Keyword.t()
 
   @spec callback_mode :: :gen_statem.callback_mode()
   def callback_mode, do: :state_functions
 
   @spec start_link(url) :: :gen_statem.start_ret()
   def start_link(url) do
-    start_link(url, @default_start_opts)
+    start_link(url, @default_open_opts)
   end
 
-  @spec start_link(url, start_opts) :: :gen_statem.start_ret()
-  def start_link(uri, start_opts) do
-    :gen_statem.start_link(__MODULE__, {uri, start_opts}, [])
+  @spec start_link(url, open_opts) :: :gen_statem.start_ret()
+  def start_link(uri, open_opts) do
+    :gen_statem.start_link(__MODULE__, {uri, open_opts}, [])
   end
 
   @spec get(:gen_statem.server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
@@ -37,11 +36,11 @@ defmodule Rbt.Conn do
     :gen_statem.call(ref, :get)
   end
 
-  def init({uri, start_opts}) do
+  def init({uri, open_opts}) do
     case ConnURI.validate(uri) do
       :ok ->
         action = {:next_event, :internal, :try_connect}
-        data = %__MODULE__{start_opts: start_opts, uri: uri}
+        data = %__MODULE__{open_opts: open_opts, uri: uri}
         {:ok, :disconnected, data, action}
 
       {:error, reason} ->
@@ -51,8 +50,7 @@ defmodule Rbt.Conn do
 
   def disconnected(event_type, :try_connect, data)
       when event_type in [:internal, :timeout] do
-    uri_options = Keyword.take(data.start_opts, [:heartbeat, :connection_timeout])
-    uri_with_options = ConnURI.merge_options(data.uri, uri_options)
+    uri_with_options = ConnURI.merge_options(data.uri, data.open_opts)
 
     case AMQP.Connection.open(uri_with_options) do
       {:ok, conn} ->
