@@ -79,7 +79,7 @@ defmodule Rbt.Conn do
   end
 
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
-    if data.mon_ref == ref and data.conn == pid do
+    if data.mon_ref == ref and data.conn.pid == pid do
       {delay, new_data} = Backoff.next_interval(data)
       action = {:timeout, delay, :try_connect}
       {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
