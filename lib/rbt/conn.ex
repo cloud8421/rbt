@@ -1,6 +1,8 @@
 defmodule Rbt.Conn do
   @behaviour :gen_statem
 
+  alias Rbt.Conn.URI, as: ConnURI
+
   @default_start_opts [
     # TODO: exponential backoff with reset
     retry_interval: 5000,
@@ -35,13 +37,13 @@ defmodule Rbt.Conn do
   end
 
   def init({uri, start_opts}) do
-    case :amqp_uri.parse(uri) do
-      {:ok, _params} ->
+    case ConnURI.validate(uri) do
+      :ok ->
         action = {:next_event, :internal, :try_connect}
         data = %__MODULE__{start_opts: start_opts, uri: uri}
         {:ok, :disconnected, data, action}
 
-      {:error, {reason, ^uri}} ->
+      {:error, reason} ->
         {:stop, {:invalid_uri, reason}}
     end
   end
@@ -49,7 +51,7 @@ defmodule Rbt.Conn do
   def disconnected(event_type, :try_connect, data)
       when event_type in [:internal, :timeout] do
     uri_options = Keyword.take(data.start_opts, [:heartbeat, :connection_timeout])
-    uri_with_options = build_connection_uri(data.uri, uri_options)
+    uri_with_options = ConnURI.merge_options(data.uri, uri_options)
 
     case AMQP.Connection.open(uri_with_options) do
       {:ok, conn} ->
@@ -78,22 +80,5 @@ defmodule Rbt.Conn do
 
   def connected({:call, from}, :get, data) do
     {:keep_state_and_data, {:reply, from, {:ok, data.conn}}}
-  end
-
-  defp build_connection_uri(base_uri, uri_opts) do
-    uri = URI.parse(base_uri)
-
-    final_query =
-      case uri.query do
-        nil ->
-          uri_opts
-
-        options ->
-          URI.decode_query(options, uri_opts)
-      end
-
-    uri
-    |> Map.put(:query, URI.encode_query(final_query))
-    |> URI.to_string()
   end
 end
