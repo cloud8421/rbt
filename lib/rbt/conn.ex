@@ -17,7 +17,23 @@ defmodule Rbt.Conn do
 
   @type url :: String.t()
   @type open_opts :: Keyword.t()
+  @type name :: atom | :gen_statem.server_name()
 
+  def child_spec(opts) do
+    uri = Keyword.fetch!(opts, :uri)
+    name = Keyword.fetch!(opts, :name)
+    open_opts = Keyword.get(opts, :open_opts, [])
+
+    %{
+      id: {__MODULE__, name},
+      start: {__MODULE__, :start_link, [uri, open_opts, name]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
+  end
+
+  @impl true
   @spec callback_mode :: :gen_statem.callback_mode()
   def callback_mode, do: :state_functions
 
@@ -28,7 +44,18 @@ defmodule Rbt.Conn do
 
   @spec start_link(url, open_opts) :: :gen_statem.start_ret()
   def start_link(uri, open_opts) do
+    open_opts = Keyword.merge(@default_open_opts, open_opts)
     :gen_statem.start_link(__MODULE__, {uri, open_opts}, [])
+  end
+
+  @spec start_link(url, open_opts, name) :: :gen_statem.start_ret()
+  def start_link(uri, open_opts, name) when is_atom(name) do
+    start_link(uri, open_opts, {:local, name})
+  end
+
+  def start_link(uri, open_opts, name) do
+    open_opts = Keyword.merge(@default_open_opts, open_opts)
+    :gen_statem.start_link(name, __MODULE__, {uri, open_opts}, [])
   end
 
   @spec get(:gen_statem.server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
@@ -36,6 +63,7 @@ defmodule Rbt.Conn do
     :gen_statem.call(ref, :get)
   end
 
+  @impl true
   def init({uri, open_opts}) do
     case ConnURI.validate(uri) do
       :ok ->
