@@ -9,7 +9,14 @@ defmodule Rbt.Consumer do
     routing_keys: []
   }
 
-  @default_config %{max_workers: 5, durable_objects: false, max_retries: :infinity}
+  @default_config %{
+    max_workers: 5,
+    durable_objects: false,
+    max_retries: :infinity,
+    forward_failures: false
+  }
+
+  @config_keys Map.keys(@default_config)
 
   defstruct conn_ref: nil,
             channel: nil,
@@ -69,7 +76,7 @@ defmodule Rbt.Consumer do
 
   def init({conn_ref, handler, opts}) do
     definitions = Map.fetch!(opts, :definitions)
-    config = Map.take(opts, [:max_workers, :max_retries, :durable_objects])
+    config = Map.take(opts, @config_keys)
 
     data = %__MODULE__{
       conn_ref: conn_ref,
@@ -200,6 +207,7 @@ defmodule Rbt.Consumer do
   end
 
   defp retry_exchange_name(exchange_name), do: exchange_name <> "-retries"
+  defp failure_exchange_name(exchange_name), do: exchange_name <> "-failures"
 
   # AMQP operations
 
@@ -209,9 +217,14 @@ defmodule Rbt.Consumer do
   end
 
   defp setup_infrastructure!(channel, definitions, config) do
+    setup_primary_objects!(channel, definitions, config)
+    setup_retry_objects!(channel, definitions, config)
+    setup_forward_failure_objects!(channel, definitions, config)
+  end
+
+  defp setup_primary_objects!(channel, definitions, config) do
     declare_exchange!(channel, definitions.exchange_name, config)
-    declare_exchange!(channel, retry_exchange_name(definitions.exchange_name), config)
-    declare_queue!(channel, definitions.queue_name, config)
+    declare_queue!(channel, definitions.exchange_name, definitions.queue_name, config)
 
     bind_queue!(
       channel,
@@ -219,10 +232,22 @@ defmodule Rbt.Consumer do
       definitions.exchange_name,
       definitions.routing_keys
     )
+  end
+
+  defp setup_retry_objects!(channel, definitions, config) do
+    declare_exchange!(channel, retry_exchange_name(definitions.exchange_name), config)
 
     bind_queue!(channel, definitions.queue_name, retry_exchange_name(definitions.exchange_name), [
       definitions.queue_name
     ])
+  end
+
+  defp setup_forward_failure_objects!(channel, definitions, config) do
+    if Map.get(config, :forward_failures, @default_config.forward_failures) do
+      declare_exchange!(channel, failure_exchange_name(definitions.exchange_name), config)
+    else
+      :ok
+    end
   end
 
   defp declare_exchange!(channel, exchange_name, config) do
@@ -231,10 +256,21 @@ defmodule Rbt.Consumer do
     :ok = AMQP.Exchange.declare(channel, exchange_name, :topic, durable: durable)
   end
 
-  defp declare_queue!(channel, queue_name, config) do
+  defp declare_queue!(channel, exchange_name, queue_name, config) do
     durable = Map.get(config, :durable_objects, @default_config.durable_objects)
+    forward_failures = Map.get(config, :forward_failures, @default_config.forward_failures)
 
-    {:ok, _queue_stats} = AMQP.Queue.declare(channel, queue_name, durable: durable)
+    queue_opts =
+      if forward_failures do
+        [
+          durable: durable,
+          arguments: [{"x-dead-letter-exchange", :longstr, failure_exchange_name(exchange_name)}]
+        ]
+      else
+        [durable: durable]
+      end
+
+    {:ok, _queue_stats} = AMQP.Queue.declare(channel, queue_name, queue_opts)
   end
 
   defp bind_queue!(channel, queue_name, exchange_name, routing_keys) do
