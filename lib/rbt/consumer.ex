@@ -9,7 +9,7 @@ defmodule Rbt.Consumer do
     routing_keys: []
   }
 
-  @default_config %{max_workers: 5, durable_objects: false}
+  @default_config %{max_workers: 5, durable_objects: false, max_retries: :infinity}
 
   defstruct conn_ref: nil,
             channel: nil,
@@ -69,7 +69,7 @@ defmodule Rbt.Consumer do
 
   def init({conn_ref, handler, opts}) do
     definitions = Map.fetch!(opts, :definitions)
-    config = Map.take(opts, [:max_workers, :durable_objects])
+    config = Map.take(opts, [:max_workers, :max_retries, :durable_objects])
 
     data = %__MODULE__{
       conn_ref: conn_ref,
@@ -199,6 +199,8 @@ defmodule Rbt.Consumer do
     {:via, Registry, {Registry.Rbt.Consumer, {exchange_name, queue_name}}}
   end
 
+  defp retry_exchange_name(exchange_name), do: exchange_name <> "-retries"
+
   # AMQP operations
 
   defp set_prefetch_count!(channel, config) do
@@ -208,6 +210,7 @@ defmodule Rbt.Consumer do
 
   defp setup_infrastructure!(channel, definitions, config) do
     declare_exchange!(channel, definitions.exchange_name, config)
+    declare_exchange!(channel, retry_exchange_name(definitions.exchange_name), config)
     declare_queue!(channel, definitions.queue_name, config)
 
     bind_queue!(
@@ -216,6 +219,10 @@ defmodule Rbt.Consumer do
       definitions.exchange_name,
       definitions.routing_keys
     )
+
+    bind_queue!(channel, definitions.queue_name, retry_exchange_name(definitions.exchange_name), [
+      definitions.queue_name
+    ])
   end
 
   defp declare_exchange!(channel, exchange_name, config) do
@@ -259,11 +266,68 @@ defmodule Rbt.Consumer do
   # MESSAGE HANDLING
 
   defp handle_delivery!(payload, meta, data) do
-    case Deliver.handle(payload, meta, data) do
-      :ok -> ack!(data.channel, meta.delivery_tag)
-      {:error, :retry, _reason} -> reject_and_requeue!(data.channel, meta.delivery_tag)
-      {:error, :no_retry, _reason} -> reject!(data.channel, meta.delivery_tag)
+    case {data.config.max_retries, get_retry_count(meta)} do
+      {:infinite, _retry_count} ->
+        handle_with_infinite_retries(payload, meta, data)
+
+      {max_retries, retry_count} when retry_count >= max_retries ->
+        reject!(data.channel, meta.delivery_tag)
+
+      {_max_retries, retry_count} ->
+        handle_with_limited_retries(payload, meta, data, retry_count)
     end
+
+    :keep_state_and_data
+  end
+
+  defp get_retry_count(meta) do
+    {"retry_count", _, retry_count} =
+      List.keyfind(meta.headers, "retry_count", 0, {"retry_count", :long, 0})
+
+    retry_count
+  end
+
+  defp handle_with_infinite_retries(payload, meta, data) do
+    case Deliver.handle(payload, meta, data) do
+      :ok ->
+        ack!(data.channel, meta.delivery_tag)
+
+      {:error, _retry_policy, _reason} ->
+        reject_and_requeue!(data.channel, meta.delivery_tag)
+    end
+  end
+
+  defp handle_with_limited_retries(payload, meta, data, retry_count) do
+    case Deliver.handle(payload, meta, data) do
+      :ok ->
+        ack!(data.channel, meta.delivery_tag)
+
+      {:error, :retry, _reason} ->
+        requeue_with_retry!(payload, meta, data, retry_count + 1)
+
+      {:error, :no_retry, _reason} ->
+        reject!(data.channel, meta.delivery_tag)
+    end
+  end
+
+  defp requeue_with_retry!(payload, meta, data, retry_count) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+
+    opts = [
+      persistent: data.config.durable_objects,
+      headers: [retry_count: retry_count],
+      content_type: meta.content_type
+    ]
+
+    ack!(data.channel, meta.delivery_tag)
+
+    AMQP.Basic.publish(
+      data.channel,
+      retry_exchange_name(exchange_name),
+      queue_name,
+      payload,
+      opts
+    )
   end
 
   # INSTRUMENTATION
