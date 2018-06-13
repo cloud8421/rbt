@@ -146,8 +146,7 @@ defmodule Rbt.Consumer do
     {:keep_state_and_data, action}
   end
 
-  def handle_event({:call, from}, :cancel, other_state, _data) do
-    IO.inspect(other_state)
+  def handle_event({:call, from}, :cancel, _other_state, _data) do
     action = {:reply, from, {:error, :invalid}}
     {:keep_state_and_data, action}
   end
