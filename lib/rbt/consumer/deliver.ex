@@ -1,21 +1,11 @@
 defmodule Rbt.Consumer.Deliver do
-  @json_adapter Application.get_env(:rbt, :json_adapter, Jason)
-
   def handle(payload, meta, consumer_config) do
-    case decode(payload, meta) do
+    case Rbt.Parser.decode(payload, meta.content_type) do
       {:ok, decoded} ->
         try_handle_event(decoded, meta, consumer_config.handler)
 
       error ->
         error
-    end
-  end
-
-  def decode(payload, meta) do
-    case meta.content_type do
-      "application/json" -> @json_adapter.decode(payload)
-      "application/octet-stream" -> safe_erl_decode(payload)
-      _unknown -> {:error, :invalid_content_type}
     end
   end
 
@@ -32,9 +22,5 @@ defmodule Rbt.Consumer.Deliver do
       _exit, reason ->
         {:error, :retry, reason}
     end
-  end
-
-  defp safe_erl_decode(payload) do
-    {:ok, :erlang.binary_to_term(payload, [:safe])}
   end
 end
