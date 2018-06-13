@@ -17,5 +17,11 @@ defmodule Rbt.ConsumerTest do
     {:ok, pid} = Rbt.Consumer.start_link(conn, handler, config)
     ref = Process.monitor(pid)
     refute_receive {:DOWN, ^ref, :process, ^pid, _reason}, 300
+
+    {:ok, :requested} = Rbt.Consumer.cancel("test-exchange", "test-queue")
+    :ok = Rbt.Consumer.cancel("test-exchange", "test-queue")
+
+    {:ok, :requested} = Rbt.Consumer.consume("test-exchange", "test-queue")
+    :ok = Rbt.Consumer.consume("test-exchange", "test-queue")
   end
 end

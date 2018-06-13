@@ -19,7 +19,9 @@ defmodule Rbt.Consumer do
             handler: nil,
             backoff_intervals: Backoff.default_intervals()
 
-  ## PUBLIC API
+  ################################################################################
+  ################################## PUBLIC API ##################################
+  ################################################################################
 
   def start_link(conn_ref, handler), do: start_link(conn_ref, handler, handler.config())
 
@@ -36,7 +38,17 @@ defmodule Rbt.Consumer do
     )
   end
 
-  ## CALLBACKS
+  def cancel(exchange_name, queue_name) do
+    :gen_statem.call(via(exchange_name, queue_name), :cancel)
+  end
+
+  def consume(exchange_name, queue_name) do
+    :gen_statem.call(via(exchange_name, queue_name), :consume)
+  end
+
+  ################################################################################
+  ################################## CALLBACKS ###################################
+  ################################################################################
 
   def child_spec(opts) do
     conn_ref = Keyword.fetch!(opts, :conn_ref)
@@ -69,7 +81,11 @@ defmodule Rbt.Consumer do
     {:ok, :idle, data, action}
   end
 
-  # STATE CALLBACKS
+  ################################################################################
+  ############################### STATE CALLBACKS ################################
+  ################################################################################
+
+  # SETUP OBJECTS AND AUTO SUBSCRIPTION
 
   def handle_event(event_type, :try_declare, :idle, data)
       when event_type in [:internal, :timeout] do
@@ -100,15 +116,81 @@ defmodule Rbt.Consumer do
     {:next_state, :subscribing, data}
   end
 
-  def handle_event(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, :subscribing, data) do
-    {:next_state, :subscribed, %{data | consumer_tag: consumer_tag}}
-  end
+  # MESSAGE HANDLING
 
   def handle_event(:info, {:basic_deliver, _payload, _meta}, :subscribed, _data) do
     :keep_state_and_data
   end
 
-  # PRIVATE
+  def handle_event(:info, {:basic_deliver, _payload, meta}, _other_state, data) do
+    AMQP.Basic.reject(data.channel, meta.delivery_tag, requeue: true)
+    :keep_state_and_data
+  end
+
+  # MANUAL CANCEL
+
+  def handle_event({:call, from}, :cancel, :subscribed, data) do
+    unsubscribe!(data.channel, data.consumer_tag)
+    action = {:reply, from, {:ok, :requested}}
+    {:next_state, :canceling, data, action}
+  end
+
+  def handle_event({:call, from}, :cancel, :canceling, _data) do
+    action = {:reply, from, {:error, :in_progress}}
+    {:keep_state_and_data, action}
+  end
+
+  def handle_event({:call, from}, :cancel, :unsubscribed, _data) do
+    action = {:reply, from, :ok}
+    {:keep_state_and_data, action}
+  end
+
+  def handle_event({:call, from}, :cancel, other_state, _data) do
+    IO.inspect(other_state)
+    action = {:reply, from, {:error, :invalid}}
+    {:keep_state_and_data, action}
+  end
+
+  # MANUAL CONSUME
+
+  def handle_event({:call, from}, :consume, :unsubscribed, data) do
+    subscribe!(data.channel, data.definitions.queue_name)
+    action = {:reply, from, {:ok, :requested}}
+    {:next_state, :subscribing, data, action}
+  end
+
+  def handle_event({:call, from}, :consume, :subscribing, _data) do
+    action = {:reply, from, {:error, :in_progress}}
+    {:keep_state_and_data, action}
+  end
+
+  def handle_event({:call, from}, :consume, :subscribed, _data) do
+    action = {:reply, from, :ok}
+    {:keep_state_and_data, action}
+  end
+
+  def handle_event({:call, from}, :consume, _other_state, _data) do
+    action = {:reply, from, {:error, :invalid}}
+    {:keep_state_and_data, action}
+  end
+
+  # SERVER SENT CONFIRMATIONS
+
+  def handle_event(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, :subscribing, data) do
+    {:next_state, :subscribed, %{data | consumer_tag: consumer_tag}}
+  end
+
+  def handle_event(:info, {:basic_cancel_ok, %{consumer_tag: consumer_tag}}, :canceling, data) do
+    if consumer_tag == data.consumer_tag do
+      {:next_state, :unsubscribed, %{data | consumer_tag: nil}}
+    else
+      :keep_state_and_data
+    end
+  end
+
+  ################################################################################
+  ################################### PRIVATE ####################################
+  ################################################################################
 
   defp via(exchange_name, queue_name) do
     {:via, Registry, {Registry.Rbt.Consumer, {exchange_name, queue_name}}}
@@ -151,5 +233,9 @@ defmodule Rbt.Consumer do
 
   defp subscribe!(channel, queue_name) do
     {:ok, _consumer_tag} = AMQP.Basic.consume(channel, queue_name)
+  end
+
+  defp unsubscribe!(channel, consumer_tag) do
+    {:ok, ^consumer_tag} = AMQP.Basic.cancel(channel, consumer_tag)
   end
 end
