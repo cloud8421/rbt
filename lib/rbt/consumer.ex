@@ -1,7 +1,7 @@
 defmodule Rbt.Consumer do
   @behaviour :gen_statem
 
-  alias Rbt.{Channel, Backoff}
+  alias Rbt.{Channel, Backoff, Consumer.Deliver}
 
   @default_definitions %{
     exchange_name: nil,
@@ -119,7 +119,8 @@ defmodule Rbt.Consumer do
 
   # MESSAGE HANDLING
 
-  def handle_event(:info, {:basic_deliver, _payload, _meta}, :subscribed, _data) do
+  def handle_event(:info, {:basic_deliver, payload, meta}, :subscribed, data) do
+    handle_delivery!(payload, meta, data)
     :keep_state_and_data
   end
 
@@ -198,6 +199,8 @@ defmodule Rbt.Consumer do
     {:via, Registry, {Registry.Rbt.Consumer, {exchange_name, queue_name}}}
   end
 
+  # AMQP operations
+
   defp set_prefetch_count!(channel, config) do
     max_workers = Map.get(config, :max_workers, @default_config.max_workers)
     :ok = AMQP.Basic.qos(channel, prefetch_count: max_workers)
@@ -243,6 +246,24 @@ defmodule Rbt.Consumer do
 
   defp reject_and_requeue!(channel, delivery_tag) do
     AMQP.Basic.reject(channel, delivery_tag, requeue: true)
+  end
+
+  defp reject!(channel, delivery_tag) do
+    AMQP.Basic.reject(channel, delivery_tag, requeue: false)
+  end
+
+  defp ack!(channel, delivery_tag) do
+    AMQP.Basic.ack(channel, delivery_tag)
+  end
+
+  # MESSAGE HANDLING
+
+  defp handle_delivery!(payload, meta, data) do
+    case Deliver.handle(payload, meta, data) do
+      :ok -> ack!(data.channel, meta.delivery_tag)
+      {:error, :retry, _reason} -> reject_and_requeue!(data.channel, meta.delivery_tag)
+      {:error, :no_retry, _reason} -> reject!(data.channel, meta.delivery_tag)
+    end
   end
 
   # INSTRUMENTATION
