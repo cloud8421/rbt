@@ -35,11 +35,11 @@ defmodule Rbt.Consumer do
   def child_spec(opts) do
     conn_ref = Keyword.fetch!(opts, :conn_ref)
     handler = Keyword.fetch!(opts, :handler)
-    consumer_opts = Keyword.fetch!(opts, :consumer_opts)
+    definitions = Keyword.fetch!(opts, :definitions)
 
     %{
       id: opts,
-      start: {__MODULE__, :start_link, [conn_ref, handler, consumer_opts]},
+      start: {__MODULE__, :start_link, [conn_ref, handler, definitions]},
       type: :worker,
       restart: :permanent,
       shutdown: 500
