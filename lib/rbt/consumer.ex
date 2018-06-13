@@ -14,6 +14,16 @@ defmodule Rbt.Consumer do
 
   @default_max_workers 5
 
+  ## PUBLIC API
+
+  def start_link(conn_ref, handler), do: start_link(conn_ref, handler, handler.config())
+
+  def start_link(conn_ref, handler, config) do
+    :gen_statem.start_link(__MODULE__, {conn_ref, handler, config}, [])
+  end
+
+  ## CALLBACKS
+
   def child_spec(opts) do
     conn_ref = Keyword.fetch!(opts, :conn_ref)
     handler = Keyword.fetch!(opts, :handler)
@@ -28,13 +38,7 @@ defmodule Rbt.Consumer do
     }
   end
 
-  def callback_mode, do: :state_functions
-
-  def start_link(conn_ref, handler), do: start_link(conn_ref, handler, handler.config())
-
-  def start_link(conn_ref, handler, config) do
-    :gen_statem.start_link(__MODULE__, {conn_ref, handler, config}, [])
-  end
+  def callback_mode, do: :handle_event_function
 
   def init({conn_ref, handler, config}) do
     exchange_name = Map.fetch!(config, :exchange_name)
@@ -52,7 +56,9 @@ defmodule Rbt.Consumer do
     {:ok, :idle, data, action}
   end
 
-  def idle(event_type, :try_declare, data)
+  # STATE CALLBACKS
+
+  def handle_event(event_type, :try_declare, :idle, data)
       when event_type in [:internal, :timeout] do
     case Channel.open(data.conn_ref) do
       {:ok, channel} ->
@@ -75,19 +81,21 @@ defmodule Rbt.Consumer do
     end
   end
 
-  def unsubscribed(:internal, :subscribe, data) do
+  def handle_event(:internal, :subscribe, :unsubscribed, data) do
     subscribe!(data.channel, data.queue_name)
 
     {:next_state, :subscribing, data}
   end
 
-  def subscribing(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, data) do
+  def handle_event(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, :subscribing, data) do
     {:next_state, :subscribed, %{data | consumer_tag: consumer_tag}}
   end
 
-  def subscribed(:info, {:basic_deliver, _payload, _meta}, _data) do
+  def handle_event(:info, {:basic_deliver, _payload, _meta}, :subscribed, _data) do
     :keep_state_and_data
   end
+
+  # PRIVATE
 
   defp set_prefetch_count!(channel, config) do
     max_workers = Map.get(config, :max_workers, @default_max_workers)
