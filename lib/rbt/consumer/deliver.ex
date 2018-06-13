@@ -14,6 +14,7 @@ defmodule Rbt.Consumer.Deliver do
   def decode(payload, meta) do
     case meta.content_type do
       "application/json" -> @json_adapter.decode(payload)
+      "application/octet-stream" -> safe_erl_decode(payload)
       _unknown -> {:error, :invalid_content_type}
     end
   end
@@ -31,5 +32,9 @@ defmodule Rbt.Consumer.Deliver do
       _exit, reason ->
         {:error, :retry, reason}
     end
+  end
+
+  defp safe_erl_decode(payload) do
+    {:ok, :erlang.binary_to_term(payload, [:safe])}
   end
 end
