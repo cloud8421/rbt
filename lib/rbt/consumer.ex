@@ -19,7 +19,15 @@ defmodule Rbt.Consumer do
   def start_link(conn_ref, handler), do: start_link(conn_ref, handler, handler.config())
 
   def start_link(conn_ref, handler, config) do
-    :gen_statem.start_link(__MODULE__, {conn_ref, handler, config}, [])
+    exchange_name = Map.fetch!(config, :exchange_name)
+    queue_name = Map.fetch!(config, :queue_name)
+
+    :gen_statem.start_link(
+      via(exchange_name, queue_name),
+      __MODULE__,
+      {conn_ref, handler, config},
+      []
+    )
   end
 
   ## CALLBACKS
@@ -96,6 +104,10 @@ defmodule Rbt.Consumer do
   end
 
   # PRIVATE
+
+  defp via(exchange_name, queue_name) do
+    {:via, Registry, {Registry.Rbt.Consumer, {exchange_name, queue_name}}}
+  end
 
   defp set_prefetch_count!(channel, config) do
     max_workers = Map.get(config, :max_workers, @default_max_workers)
