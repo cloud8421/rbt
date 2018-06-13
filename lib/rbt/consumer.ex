@@ -17,7 +17,8 @@ defmodule Rbt.Consumer do
             config: @default_config,
             consumer_tag: nil,
             handler: nil,
-            backoff_intervals: Backoff.default_intervals()
+            backoff_intervals: Backoff.default_intervals(),
+            instrumentation: Rbt.Instrumentation.NoOp
 
   ################################################################################
   ################################## PUBLIC API ##################################
@@ -177,11 +178,13 @@ defmodule Rbt.Consumer do
   # SERVER SENT CONFIRMATIONS
 
   def handle_event(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, :subscribing, data) do
+    instrument_consume_ok!(data)
     {:next_state, :subscribed, %{data | consumer_tag: consumer_tag}}
   end
 
   def handle_event(:info, {:basic_cancel_ok, %{consumer_tag: consumer_tag}}, :canceling, data) do
     if consumer_tag == data.consumer_tag do
+      instrument_cancel_ok!(data)
       {:next_state, :unsubscribed, %{data | consumer_tag: nil}}
     else
       :keep_state_and_data
@@ -237,5 +240,15 @@ defmodule Rbt.Consumer do
 
   defp unsubscribe!(channel, consumer_tag) do
     {:ok, ^consumer_tag} = AMQP.Basic.cancel(channel, consumer_tag)
+  end
+
+  defp instrument_consume_ok!(data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.on_consume(exchange_name, queue_name)
+  end
+
+  defp instrument_cancel_ok!(data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.on_cancel(exchange_name, queue_name)
   end
 end
