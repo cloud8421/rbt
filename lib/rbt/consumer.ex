@@ -124,7 +124,7 @@ defmodule Rbt.Consumer do
   end
 
   def handle_event(:info, {:basic_deliver, _payload, meta}, _other_state, data) do
-    AMQP.Basic.reject(data.channel, meta.delivery_tag, requeue: true)
+    reject_and_requeue!(data.channel, meta.delivery_tag)
     :keep_state_and_data
   end
 
@@ -240,6 +240,12 @@ defmodule Rbt.Consumer do
   defp unsubscribe!(channel, consumer_tag) do
     {:ok, ^consumer_tag} = AMQP.Basic.cancel(channel, consumer_tag)
   end
+
+  defp reject_and_requeue!(channel, delivery_tag) do
+    AMQP.Basic.reject(channel, delivery_tag, requeue: true)
+  end
+
+  # INSTRUMENTATION
 
   defp instrument_consume_ok!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
