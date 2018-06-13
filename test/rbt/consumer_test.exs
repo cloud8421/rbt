@@ -5,9 +5,11 @@ defmodule Rbt.ConsumerTest do
     handler = Foo
 
     config = %{
-      exchange_name: "test-exchange",
-      queue_name: "test-queue",
-      routing_keys: ["foo.bar", "bar.baz"]
+      definitions: %{
+        exchange_name: "test-exchange",
+        queue_name: "test-queue",
+        routing_keys: ["foo.bar", "bar.baz"]
+      }
     }
 
     {:ok, conn} = Rbt.Conn.start_link("amqp://guest:guest@localhost:5672/rbt-test", [], :example)

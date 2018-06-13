@@ -3,24 +3,30 @@ defmodule Rbt.Consumer do
 
   alias Rbt.{Channel, Backoff}
 
+  @default_definitions %{
+    exchange_name: nil,
+    queue_name: nil,
+    routing_keys: []
+  }
+
+  @default_config %{max_workers: 5, durable_objects: false}
+
   defstruct conn_ref: nil,
             channel: nil,
+            definitions: @default_definitions,
+            config: @default_config,
             consumer_tag: nil,
-            exchange_name: nil,
-            queue_name: nil,
-            config: %{},
             handler: nil,
             backoff_intervals: Backoff.default_intervals()
-
-  @default_max_workers 5
 
   ## PUBLIC API
 
   def start_link(conn_ref, handler), do: start_link(conn_ref, handler, handler.config())
 
   def start_link(conn_ref, handler, config) do
-    exchange_name = Map.fetch!(config, :exchange_name)
-    queue_name = Map.fetch!(config, :queue_name)
+    definitions = Map.fetch!(config, :definitions)
+    exchange_name = Map.fetch!(definitions, :exchange_name)
+    queue_name = Map.fetch!(definitions, :queue_name)
 
     :gen_statem.start_link(
       via(exchange_name, queue_name),
@@ -35,11 +41,11 @@ defmodule Rbt.Consumer do
   def child_spec(opts) do
     conn_ref = Keyword.fetch!(opts, :conn_ref)
     handler = Keyword.fetch!(opts, :handler)
-    definitions = Keyword.fetch!(opts, :definitions)
+    config = Enum.into(opts, %{})
 
     %{
       id: opts,
-      start: {__MODULE__, :start_link, [conn_ref, handler, definitions]},
+      start: {__MODULE__, :start_link, [conn_ref, handler, config]},
       type: :worker,
       restart: :permanent,
       shutdown: 500
@@ -48,14 +54,13 @@ defmodule Rbt.Consumer do
 
   def callback_mode, do: :handle_event_function
 
-  def init({conn_ref, handler, config}) do
-    exchange_name = Map.fetch!(config, :exchange_name)
-    queue_name = Map.fetch!(config, :queue_name)
+  def init({conn_ref, handler, opts}) do
+    definitions = Map.fetch!(opts, :definitions)
+    config = Map.take(opts, [:max_workers, :durable_objects])
 
     data = %__MODULE__{
       conn_ref: conn_ref,
-      exchange_name: exchange_name,
-      queue_name: queue_name,
+      definitions: definitions,
       config: config,
       handler: handler
     }
@@ -72,7 +77,7 @@ defmodule Rbt.Consumer do
       {:ok, channel} ->
         set_prefetch_count!(channel, data.config)
         Process.monitor(channel.pid)
-        setup_infrastructure!(channel, data)
+        setup_infrastructure!(channel, data.definitions, data.config)
         action = {:next_event, :internal, :subscribe}
 
         new_data =
@@ -90,7 +95,7 @@ defmodule Rbt.Consumer do
   end
 
   def handle_event(:internal, :subscribe, :unsubscribed, data) do
-    subscribe!(data.channel, data.queue_name)
+    subscribe!(data.channel, data.definitions.queue_name)
 
     {:next_state, :subscribing, data}
   end
@@ -110,29 +115,35 @@ defmodule Rbt.Consumer do
   end
 
   defp set_prefetch_count!(channel, config) do
-    max_workers = Map.get(config, :max_workers, @default_max_workers)
+    max_workers = Map.get(config, :max_workers, @default_config.max_workers)
     :ok = AMQP.Basic.qos(channel, prefetch_count: max_workers)
   end
 
-  defp setup_infrastructure!(channel, data) do
-    declare_exchange!(channel, data.exchange_name, data.config)
-    declare_queue!(channel, data.queue_name, data.config)
-    bind_queue!(channel, data.queue_name, data.exchange_name, data.config)
+  defp setup_infrastructure!(channel, definitions, config) do
+    declare_exchange!(channel, definitions.exchange_name, config)
+    declare_queue!(channel, definitions.queue_name, config)
+
+    bind_queue!(
+      channel,
+      definitions.queue_name,
+      definitions.exchange_name,
+      definitions.routing_keys
+    )
   end
 
   defp declare_exchange!(channel, exchange_name, config) do
-    durable = Map.get(config, :durable_objects?, false)
+    durable = Map.get(config, :durable_objects, @default_config.durable_objects)
+
     :ok = AMQP.Exchange.declare(channel, exchange_name, :topic, durable: durable)
   end
 
   defp declare_queue!(channel, queue_name, config) do
-    durable = Map.get(config, :durable_objects?, false)
+    durable = Map.get(config, :durable_objects, @default_config.durable_objects)
+
     {:ok, _queue_stats} = AMQP.Queue.declare(channel, queue_name, durable: durable)
   end
 
-  defp bind_queue!(channel, queue_name, exchange_name, config) do
-    routing_keys = Map.get(config, :routing_keys, [])
-
+  defp bind_queue!(channel, queue_name, exchange_name, routing_keys) do
     Enum.each(routing_keys, fn rk ->
       AMQP.Queue.bind(channel, queue_name, exchange_name, routing_key: rk)
     end)
