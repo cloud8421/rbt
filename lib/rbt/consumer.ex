@@ -325,23 +325,28 @@ defmodule Rbt.Consumer do
 
   defp handle_with_infinite_retries(payload, meta, data) do
     case Deliver.handle(payload, meta, data) do
-      :ok ->
+      {:ok, event} ->
+        instrument_event_ok!(event, meta, data)
         ack!(data.channel, meta.delivery_tag)
 
-      {:error, _retry_policy, _reason} ->
+      {:error, _retry_policy, reason, event} ->
+        instrument_event_error!(event, reason, meta, data)
         reject_and_requeue!(data.channel, meta.delivery_tag)
     end
   end
 
   defp handle_with_limited_retries(payload, meta, data, retry_count) do
     case Deliver.handle(payload, meta, data) do
-      :ok ->
+      {:ok, event} ->
+        instrument_event_ok!(event, meta, data)
         ack!(data.channel, meta.delivery_tag)
 
-      {:error, :retry, _reason} ->
+      {:error, :retry, reason, event} ->
+        instrument_event_error!(event, reason, meta, data)
         requeue_with_retry!(payload, meta, data, retry_count + 1)
 
-      {:error, :no_retry, _reason} ->
+      {:error, :no_retry, reason, event} ->
+        instrument_event_error!(event, reason, meta, data)
         reject!(data.channel, meta.delivery_tag)
     end
   end
@@ -376,5 +381,15 @@ defmodule Rbt.Consumer do
   defp instrument_cancel_ok!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
     data.instrumentation.on_cancel(exchange_name, queue_name)
+  end
+
+  defp instrument_event_ok!(event, meta, data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.on_event_ok(exchange_name, queue_name, event, meta)
+  end
+
+  defp instrument_event_error!(event, error, meta, data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.on_event_error(exchange_name, queue_name, event, meta, error)
   end
 end
