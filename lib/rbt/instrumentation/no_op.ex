@@ -1,4 +1,6 @@
 defmodule Rbt.Instrumentation.NoOp do
+  def setup(_exchange_name, _queue_name), do: :ok
+  def teardown(_exchange_name, _queue_name), do: :ok
   def on_consume(_exchange_name, _queue_name), do: :ok
   def on_cancel(_exchange_name, _queue_name), do: :ok
   def on_event_ok(_exchange_name, _queue_name, _event, _meta), do: :ok

@@ -85,6 +85,10 @@ defmodule Rbt.Consumer do
       handler: handler
     }
 
+    instrument_setup!(data)
+
+    Process.flag(:trap_exit, true)
+
     action = {:next_event, :internal, :try_declare}
     {:ok, :idle, data, action}
   end
@@ -198,6 +202,14 @@ defmodule Rbt.Consumer do
     end
   end
 
+  def terminate(_reason, _state, data) do
+    instrument_teardown!(data)
+
+    if data.channel do
+      AMQP.Channel.close(data.channel)
+    end
+  end
+
   ################################################################################
   ################################### PRIVATE ####################################
   ################################################################################
@@ -207,6 +219,7 @@ defmodule Rbt.Consumer do
   end
 
   defp retry_exchange_name(exchange_name), do: exchange_name <> "-retries"
+
   defp failure_exchange_name(exchange_name), do: exchange_name <> "-failures"
 
   # AMQP operations
@@ -372,6 +385,16 @@ defmodule Rbt.Consumer do
   end
 
   # INSTRUMENTATION
+
+  defp instrument_setup!(data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.setup(exchange_name, queue_name)
+  end
+
+  defp instrument_teardown!(data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.teardown(exchange_name, queue_name)
+  end
 
   defp instrument_consume_ok!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
