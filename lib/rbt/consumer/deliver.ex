@@ -11,12 +11,10 @@ defmodule Rbt.Consumer.Deliver do
 
   defp try_handle_event(event, meta, handler) do
     try do
-      case handler.handle_event(event, meta) do
-        :ok ->
-          {:ok, event}
-
-        error ->
-          Tuple.append(error, event)
+      if handler.skip?(event, meta) do
+        {:skip, event}
+      else
+        do_try_handle_event(event, meta, handler)
       end
     rescue
       error ->
@@ -27,6 +25,16 @@ defmodule Rbt.Consumer.Deliver do
 
       _exit, reason ->
         {:error, :retry, reason, event}
+    end
+  end
+
+  defp do_try_handle_event(event, meta, handler) do
+    case handler.handle_event(event, meta) do
+      :ok ->
+        {:ok, event}
+
+      error ->
+        Tuple.append(error, event)
     end
   end
 end
