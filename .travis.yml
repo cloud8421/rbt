@@ -1,0 +1,14 @@
+language: elixir
+elixir:
+  - 1.6.6
+  - 1.6.5
+otp_release: '21.0'
+services:
+  - rabbitmq
+env:
+  - MIX_ENV=test
+before_script:
+  - sudo rabbitmqctl add_vhost rbt-test
+  - sudo rabbitmqctl set_permissions -p rbt-test guest ".*" ".*" ".*"
+script:
+  - mix do deps.get, test
