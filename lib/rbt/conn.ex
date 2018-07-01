@@ -77,7 +77,7 @@ defmodule Rbt.Conn do
   end
 
   def disconnected(event_type, :try_connect, data)
-      when event_type in [:internal, :timeout] do
+      when event_type in [:internal, :state_timeout] do
     uri_with_options = ConnURI.merge_options(data.uri, data.open_opts)
 
     case AMQP.Connection.open(uri_with_options) do
@@ -95,7 +95,7 @@ defmodule Rbt.Conn do
       _error ->
         # TODO: pass failure to diagnostics
         {delay, new_data} = Backoff.next_interval(data)
-        action = {:timeout, delay, :try_connect}
+        action = {:state_timeout, delay, :try_connect}
         {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     end
   end
@@ -107,7 +107,7 @@ defmodule Rbt.Conn do
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn.pid == pid do
       {delay, new_data} = Backoff.next_interval(data)
-      action = {:timeout, delay, :try_connect}
+      action = {:state_timeout, delay, :try_connect}
       {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     else
       :keep_state_and_data

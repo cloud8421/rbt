@@ -100,7 +100,7 @@ defmodule Rbt.Consumer do
   # SETUP OBJECTS AND AUTO SUBSCRIPTION
 
   def handle_event(event_type, :try_declare, :idle, data)
-      when event_type in [:internal, :timeout] do
+      when event_type in [:internal, :state_timeout] do
     case Channel.open(data.conn_ref) do
       {:ok, channel} ->
         set_prefetch_count!(channel, data.config)
@@ -117,7 +117,7 @@ defmodule Rbt.Consumer do
 
       _error ->
         {delay, new_data} = Backoff.next_interval(data)
-        action = {:timeout, delay, :try_declare}
+        action = {:state_timeout, delay, :try_declare}
         {:keep_state, %{new_data | channel: nil}, action}
     end
   end
