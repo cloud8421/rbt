@@ -1,6 +1,6 @@
 defmodule Rbt.Consumer.Deliver do
   def handle(payload, meta, consumer_config) do
-    case Rbt.Parser.decode(payload, meta.content_type) do
+    case Rbt.Data.decode(payload, meta.content_type) do
       {:ok, decoded} ->
         try_handle_event(decoded, meta, consumer_config.handler)
 

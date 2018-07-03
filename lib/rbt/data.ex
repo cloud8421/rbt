@@ -1,4 +1,4 @@
-defmodule Rbt.Parser do
+defmodule Rbt.Data do
   @json_adapter Application.get_env(:rbt, :json_adapter, Jason)
 
   def decode(payload, "application/json") do
