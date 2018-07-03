@@ -12,4 +12,16 @@ defmodule Rbt.Parser do
   def decode(_payload, _content_type) do
     {:error, :unsupported_content_type}
   end
+
+  def encode(payload, "application/json") do
+    @json_adapter.encode(payload)
+  end
+
+  def encode(payload, "application/octet-stream") do
+    {:ok, :erlang.term_to_binary(payload, [:compressed])}
+  end
+
+  def encode(_payload, _content_type) do
+    {:error, :unsupported_content_type}
+  end
 end
