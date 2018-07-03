@@ -5,7 +5,8 @@ defmodule Rbt.Application do
 
   def start(_type, _args) do
     children = [
-      {Registry, keys: :unique, name: Registry.Rbt.Consumer}
+      {Registry, keys: :unique, name: Registry.Rbt.Consumer},
+      {Registry, keys: :unique, name: Registry.Rbt.Producer}
     ]
 
     opts = [strategy: :one_for_one, name: Rbt.Supervisor]
