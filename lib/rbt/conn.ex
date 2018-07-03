@@ -63,6 +63,11 @@ defmodule Rbt.Conn do
     :gen_statem.call(ref, :get)
   end
 
+  @spec close(:gen_statem.server_ref()) :: :ok
+  def close(ref) do
+    :gen_statem.call(ref, :close)
+  end
+
   @impl true
   def init({uri, open_opts}) do
     case ConnURI.validate(uri) do
@@ -104,6 +109,10 @@ defmodule Rbt.Conn do
     {:keep_state_and_data, {:reply, from, {:error, :disconnected}}}
   end
 
+  def disconnected({:call, from}, :close, _data) do
+    {:stop_and_reply, :normal, {:reply, from, :ok}}
+  end
+
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn.pid == pid do
       {delay, new_data} = Backoff.next_interval(data)
@@ -116,5 +125,10 @@ defmodule Rbt.Conn do
 
   def connected({:call, from}, :get, data) do
     {:keep_state_and_data, {:reply, from, {:ok, data.conn}}}
+  end
+
+  def connected({:call, from}, :close, data) do
+    AMQP.Connection.close(data.conn)
+    {:stop_and_reply, :normal, {:reply, from, :ok}}
   end
 end
