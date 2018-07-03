@@ -25,7 +25,7 @@ defmodule Rbt.Consumer do
             consumer_tag: nil,
             handler: nil,
             backoff_intervals: Backoff.default_intervals(),
-            instrumentation: Rbt.Instrumentation.NoOp
+            instrumentation: Rbt.Instrumentation.NoOp.Consumer
 
   ################################################################################
   ################################## PUBLIC API ##################################
