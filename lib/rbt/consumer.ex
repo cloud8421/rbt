@@ -61,7 +61,7 @@ defmodule Rbt.Consumer do
   def child_spec(opts) do
     conn_ref = Keyword.fetch!(opts, :conn_ref)
     handler = Keyword.fetch!(opts, :handler)
-    config = Enum.into(opts, %{})
+    config = Enum.into(opts, @default_config)
 
     %{
       id: opts,
@@ -81,7 +81,7 @@ defmodule Rbt.Consumer do
     data = %__MODULE__{
       conn_ref: conn_ref,
       definitions: definitions,
-      config: config,
+      config: Map.merge(config, @default_config),
       handler: handler
     }
 
