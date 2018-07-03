@@ -15,7 +15,8 @@ defmodule Rbt.Producer do
             config: @default_config,
             channel: nil,
             buffer: :queue.new(),
-            backoff_intervals: Backoff.default_intervals()
+            backoff_intervals: Backoff.default_intervals(),
+            instrumentation: Rbt.Instrumentation.NoOp.Producer
 
   defmodule Event do
     defstruct topic: nil,
@@ -71,9 +72,19 @@ defmodule Rbt.Producer do
       config: config
     }
 
+    instrument_setup!(data)
+
     action = {:next_event, :internal, :try_declare}
 
     {:ok, :buffering, data, action}
+  end
+
+  def terminate(_reason, _state, data) do
+    instrument_teardown!(data)
+
+    if data.channel do
+      AMQP.Channel.close(data.channel)
+    end
   end
 
   ################################################################################
@@ -87,6 +98,7 @@ defmodule Rbt.Producer do
     case Channel.open(data.conn_ref) do
       {:ok, channel} ->
         mon_ref = Process.monitor(channel.pid)
+
         declare_exchange!(channel, data.exchange_name, data.config)
 
         new_data =
@@ -95,12 +107,17 @@ defmodule Rbt.Producer do
           |> Map.put(:mon_ref, mon_ref)
           |> Map.put(:channel, channel)
 
+        instrument_on_connect!(new_data)
+
         action = {:next_event, :internal, :flush_buffer}
 
         {:next_state, :active, new_data, action}
 
       _error ->
         {delay, new_data} = Backoff.next_interval(data)
+
+        instrument_on_disconnect!(new_data)
+
         action = {:state_timeout, delay, :try_declare}
         {:keep_state, %{new_data | channel: nil, mon_ref: nil}, action}
     end
@@ -118,14 +135,17 @@ defmodule Rbt.Producer do
   def handle_event({:call, from}, {:publish, event}, :active, data) do
     case publish_event(event, data.channel, data.exchange_name) do
       :closing ->
+        instrument_publish_error!(data, event, :channel_closing, :queue.len(data.buffer))
         actions = [{:next_event, :internal, {:queue, event}}, {:reply, from, :ok}]
         {:keep_state_and_data, actions}
 
       {:error, :unsupported_content_type} = error ->
+        instrument_publish_error!(data, event, :unsupported_content_type, :queue.len(data.buffer))
         action = {:reply, from, error}
         {:keep_state_and_data, action}
 
       _success ->
+        instrument_publish_ok!(data, event, :queue.len(data.buffer))
         action = {:reply, from, :ok}
         {:keep_state_and_data, action}
     end
@@ -133,6 +153,8 @@ defmodule Rbt.Producer do
 
   def handle_event(:internal, {:queue, event}, _state, data) do
     new_buffer = :queue.in(event, data.buffer)
+
+    instrument_queue!(data, event, :queue.len(new_buffer))
 
     {:keep_state, %{data | buffer: new_buffer}}
   end
@@ -145,13 +167,22 @@ defmodule Rbt.Producer do
       {{:value, event}, new_buffer} ->
         case publish_event(event, data.channel, data.exchange_name) do
           :closing ->
+            instrument_publish_error!(data, event, :channel_closing, :queue.len(data.buffer))
             :keep_state_and_data
 
           {:error, :unsupported_content_type} ->
+            instrument_publish_error!(
+              data,
+              event,
+              :unsupported_content_type,
+              :queue.len(data.buffer)
+            )
+
             action = {:next_event, :internal, :flush_buffer}
             {:keep_state, %{data | buffer: new_buffer}, action}
 
           _success ->
+            instrument_publish_ok!(data, event, :queue.len(data.buffer))
             action = {:next_event, :internal, :flush_buffer}
             {:keep_state, %{data | buffer: new_buffer}, action}
         end
@@ -172,6 +203,7 @@ defmodule Rbt.Producer do
 
   def handle_event(:info, {:DOWN, ref, :process, pid, _reason}, _state, data) do
     if data.mon_ref == ref and data.channel.pid == pid do
+      instrument_on_disconnect!(data)
       action = {:next_event, :internal, :try_declare}
       {:next_state, :buffering, %{data | channel: nil, mon_ref: nil}, action}
     else
@@ -225,5 +257,35 @@ defmodule Rbt.Producer do
       error ->
         error
     end
+  end
+
+  # INSTRUMENTATION
+
+  defp instrument_setup!(data) do
+    data.instrumentation.setup(data.exchange_name)
+  end
+
+  defp instrument_teardown!(data) do
+    data.instrumentation.teardown(data.exchange_name)
+  end
+
+  defp instrument_on_connect!(data) do
+    data.instrumentation.on_connect(data.exchange_name)
+  end
+
+  defp instrument_on_disconnect!(data) do
+    data.instrumentation.on_disconnect(data.exchange_name)
+  end
+
+  defp instrument_publish_ok!(data, event, buffer_size) do
+    data.instrumentation.on_publish_ok(data.exchange_name, event, buffer_size)
+  end
+
+  defp instrument_publish_error!(data, event, error, buffer_size) do
+    data.instrumentation.on_publish_ok(data.exchange_name, event, error, buffer_size)
+  end
+
+  defp instrument_queue!(data, event, buffer_size) do
+    data.instrumentation.on_queue(data.exchange_name, event, buffer_size)
   end
 end
