@@ -1,21 +1,23 @@
 # Rbt
 
-**TODO: Add description**
+Work in progress, not usable yet.
 
-## Installation
+## Features
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `rbt` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:rbt, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/rbt](https://hexdocs.pm/rbt).
-
+- [ ] Topic consumers
+  - [x] auto retries with backoff
+  - [x] forward failures to separate exchange for capture
+  - [ ] parallelized, bounded message handling
+  - [x] instrumentation hooks
+  - [x] manual consume/cancel control
+  - [x] multiple content types (erlang, json)
+  - [ ] test helpers
+- [ ] Topic publishers
+  - [x] internal buffering in case of disconnection
+  - [x] auto-fingerprint of published messages with generated uuid
+  - [x] instrumentation hooks
+  - [x] multiple content types (erlang, json)
+  - [ ] test helpers
+- [ ] RPC server
+- [ ] RPC client
+- [ ] Complete docs
