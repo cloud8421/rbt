@@ -2,6 +2,18 @@
 
 Work in progress, not usable yet.
 
+## Guidelines
+
+- Small, explicit and composable building blocks
+- Configuration only for compile-time variables (e.g. which JSON decoder to use)
+- Always pass down configuration from the top, e.g. application -> supervisor -> single worker
+- Always pass options explicitly at start
+- Instrumentable
+- Smallest possible dependency surface (make as many as possible optional)
+- Support multiple mimetypes
+- Don't hide APIs, rather provide ways to compose them
+- Introspection to see running components at any given time
+
 ## Features
 
 - [ ] Topic consumers
