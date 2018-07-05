@@ -46,9 +46,12 @@ defmodule Rbt.ProducerTest do
   defp publish_sample_message(number_of_times) do
     Enum.each(1..number_of_times, fn _ ->
       assert :ok ==
-               Rbt.Producer.publish("test-exchange", "test.topic", "application/json", %{
-                 some: "data"
-               })
+               Rbt.Producer.publish(
+                 "test-exchange",
+                 "test.topic",
+                 %{some: "data"},
+                 content_type: "application/json"
+               )
     end)
   end
 end

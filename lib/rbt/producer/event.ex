@@ -3,17 +3,16 @@ defmodule Rbt.Producer.Event do
             data: %{},
             opts: []
 
-  def new(topic, content_type, event_data, message_id) do
-    opts = [
-      message_id: message_id,
-      content_type: content_type,
-      headers: [retry_count: 0]
-    ]
+  @default_opts [
+    headers: [retry_count: 0],
+    persistent: false
+  ]
 
+  def new(topic, event_data, opts) do
     %__MODULE__{
       topic: topic,
       data: event_data,
-      opts: opts
+      opts: Keyword.merge(@default_opts, opts)
     }
   end
 end

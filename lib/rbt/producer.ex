@@ -28,8 +28,14 @@ defmodule Rbt.Producer do
     :gen_statem.start_link(via(exchange_name), __MODULE__, {conn_ref, opts}, [])
   end
 
-  def publish(exchange_name, topic, content_type, event_data, message_id \\ Rbt.UUID.generate()) do
-    event = Event.new(topic, content_type, event_data, message_id)
+  def publish(exchange_name, topic, event_data, opts) do
+    event_opts = [
+      message_id: Keyword.get(opts, :message_id, Rbt.UUID.generate()),
+      content_type: Keyword.fetch!(opts, :content_type),
+      persistent: Keyword.get(opts, :persistent, false)
+    ]
+
+    event = Event.new(topic, event_data, event_opts)
 
     :gen_statem.call(via(exchange_name), {:publish, event})
   end
