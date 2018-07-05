@@ -74,6 +74,8 @@ defmodule Rbt.Producer do
 
     instrument_setup!(data)
 
+    Process.flag(:trap_exit, true)
+
     action = {:next_event, :internal, :try_declare}
 
     {:ok, :buffering, data, action}
