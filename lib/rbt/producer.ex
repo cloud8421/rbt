@@ -1,7 +1,7 @@
 defmodule Rbt.Producer do
   @behaviour :gen_statem
 
-  alias Rbt.{Channel, Backoff}
+  alias Rbt.{Channel, Backoff, Producer.Event}
 
   @default_config %{
     durable_objects: false
@@ -18,12 +18,6 @@ defmodule Rbt.Producer do
             backoff_intervals: Backoff.default_intervals(),
             instrumentation: Rbt.Instrumentation.NoOp.Producer
 
-  defmodule Event do
-    defstruct topic: nil,
-              data: %{},
-              opts: []
-  end
-
   ################################################################################
   ################################## PUBLIC API ##################################
   ################################################################################
@@ -35,7 +29,7 @@ defmodule Rbt.Producer do
   end
 
   def publish(exchange_name, topic, content_type, event_data, message_id \\ Rbt.UUID.generate()) do
-    event = build_event(topic, content_type, event_data, message_id)
+    event = Event.new(topic, content_type, event_data, message_id)
 
     :gen_statem.call(via(exchange_name), {:publish, event})
   end
@@ -228,20 +222,6 @@ defmodule Rbt.Producer do
   end
 
   # PUBLISHING
-
-  defp build_event(topic, content_type, event_data, message_id) do
-    opts = [
-      message_id: message_id,
-      content_type: content_type,
-      headers: [retry_count: 0]
-    ]
-
-    %Event{
-      topic: topic,
-      data: event_data,
-      opts: opts
-    }
-  end
 
   defp publish_event(event, channel, exchange_name) do
     content_type = Keyword.get(event.opts, :content_type)
