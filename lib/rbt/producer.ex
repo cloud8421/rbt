@@ -69,7 +69,7 @@ defmodule Rbt.Producer do
     data = %__MODULE__{
       conn_ref: conn_ref,
       exchange_name: exchange_name,
-      config: config
+      config: Map.merge(@default_config, config)
     }
 
     instrument_setup!(data)
