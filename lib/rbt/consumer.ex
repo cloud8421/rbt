@@ -81,7 +81,7 @@ defmodule Rbt.Consumer do
     data = %__MODULE__{
       conn_ref: conn_ref,
       definitions: definitions,
-      config: Map.merge(config, @default_config),
+      config: Map.merge(@default_config, config),
       handler: handler
     }
 
