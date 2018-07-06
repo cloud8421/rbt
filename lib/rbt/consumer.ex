@@ -131,7 +131,10 @@ defmodule Rbt.Consumer do
   # MESSAGE HANDLING
 
   def handle_event(:info, {:basic_deliver, payload, meta}, :subscribed, data) do
-    handle_delivery!(payload, meta, data)
+    Task.Supervisor.async(Rbt.Consumer.DefaultTaskSupervisor, fn ->
+      handle_delivery!(payload, meta, data)
+    end)
+
     :keep_state_and_data
   end
 
@@ -200,6 +203,35 @@ defmodule Rbt.Consumer do
     else
       :keep_state_and_data
     end
+  end
+
+  def handle_event(:info, {_task_ref, result}, :subscribed, data) do
+    case result do
+      {:skip, meta} ->
+        ack!(data.channel, meta.delivery_tag)
+
+      {:ok, meta} ->
+        ack!(data.channel, meta.delivery_tag)
+
+      {:error, :no_retry, meta} ->
+        reject!(data.channel, meta.delivery_tag)
+
+      {:error, :retry, _payload, meta, :infinity} ->
+        reject_and_requeue!(data.channel, meta.delivery_tag)
+
+      {:error, :retry, payload, meta, retry_count} ->
+        requeue_with_retry!(payload, meta, data, retry_count)
+    end
+
+    :keep_state_and_data
+  end
+
+  def handle_event(:info, {:EXIT, _pid, :normal}, _state, _data) do
+    :keep_state_and_data
+  end
+
+  def handle_event(:info, {:DOWN, _ref, :process, _pid, :normal}, _state, _data) do
+    :keep_state_and_data
   end
 
   def terminate(_reason, _state, data) do
@@ -316,17 +348,15 @@ defmodule Rbt.Consumer do
 
   defp handle_delivery!(payload, meta, data) do
     case {data.config.max_retries, get_retry_count(meta)} do
-      {:infinite, _retry_count} ->
+      {:infinity, _retry_count} ->
         handle_with_infinite_retries(payload, meta, data)
 
       {max_retries, retry_count} when retry_count >= max_retries ->
-        reject!(data.channel, meta.delivery_tag)
+        {:error, :no_retry, meta}
 
       {_max_retries, retry_count} ->
         handle_with_limited_retries(payload, meta, data, retry_count)
     end
-
-    :keep_state_and_data
   end
 
   defp get_retry_count(meta) do
@@ -340,15 +370,15 @@ defmodule Rbt.Consumer do
     case Deliver.handle(payload, meta, data) do
       {:skip, event} ->
         instrument_event_skip!(event, meta, data)
-        ack!(data.channel, meta.delivery_tag)
+        {:skip, meta}
 
       {:ok, event} ->
         instrument_event_ok!(event, meta, data)
-        ack!(data.channel, meta.delivery_tag)
+        {:ok, meta}
 
       {:error, _retry_policy, reason, event} ->
         instrument_event_error!(event, reason, meta, data)
-        reject_and_requeue!(data.channel, meta.delivery_tag)
+        {:error, :retry, payload, meta, :infinity}
     end
   end
 
@@ -356,19 +386,19 @@ defmodule Rbt.Consumer do
     case Deliver.handle(payload, meta, data) do
       {:skip, event} ->
         instrument_event_skip!(event, meta, data)
-        ack!(data.channel, meta.delivery_tag)
+        {:skip, meta}
 
       {:ok, event} ->
         instrument_event_ok!(event, meta, data)
-        ack!(data.channel, meta.delivery_tag)
+        {:ok, meta}
 
       {:error, :retry, reason, event} ->
         instrument_event_error!(event, reason, meta, data)
-        requeue_with_retry!(payload, meta, data, retry_count + 1)
+        {:error, :retry, payload, meta, retry_count + 1}
 
       {:error, :no_retry, reason, event} ->
         instrument_event_error!(event, reason, meta, data)
-        reject!(data.channel, meta.delivery_tag)
+        {:error, :no_retry, meta}
     end
   end
 
