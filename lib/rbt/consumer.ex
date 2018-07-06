@@ -25,6 +25,7 @@ defmodule Rbt.Consumer do
             consumer_tag: nil,
             handler: nil,
             backoff_intervals: Backoff.default_intervals(),
+            task_supervisor: Rbt.Consumer.DefaultTaskSupervisor,
             instrumentation: Rbt.Instrumentation.NoOp.Consumer
 
   ################################################################################
@@ -131,7 +132,7 @@ defmodule Rbt.Consumer do
   # MESSAGE HANDLING
 
   def handle_event(:info, {:basic_deliver, payload, meta}, :subscribed, data) do
-    Task.Supervisor.async(Rbt.Consumer.DefaultTaskSupervisor, fn ->
+    Task.Supervisor.async(data.task_supervisor, fn ->
       handle_delivery!(payload, meta, data)
     end)
 
