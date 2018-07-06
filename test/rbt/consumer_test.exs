@@ -83,6 +83,6 @@ defmodule Rbt.ConsumerTest do
       content_type: "application/json"
     )
 
-    Process.sleep(1000)
+    Process.sleep(500)
   end
 end

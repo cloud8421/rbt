@@ -132,7 +132,7 @@ defmodule Rbt.Consumer do
   # MESSAGE HANDLING
 
   def handle_event(:info, {:basic_deliver, payload, meta}, :subscribed, data) do
-    Task.Supervisor.async(data.task_supervisor, fn ->
+    Task.Supervisor.async_nolink(data.task_supervisor, fn ->
       handle_delivery!(payload, meta, data)
     end)
 
@@ -227,12 +227,12 @@ defmodule Rbt.Consumer do
     :keep_state_and_data
   end
 
-  def handle_event(:info, {:EXIT, _pid, :normal}, _state, _data) do
+  def handle_event(:info, {:DOWN, _ref, :process, _pid, :normal}, _state, _data) do
     :keep_state_and_data
   end
 
-  def handle_event(:info, {:DOWN, _ref, :process, _pid, :normal}, _state, _data) do
-    :keep_state_and_data
+  def handle_event(:info, {:DOWN, _ref, :process, _pid, reason}, _state, _data) do
+    {:stop, reason}
   end
 
   def terminate(_reason, _state, data) do
