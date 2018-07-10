@@ -55,6 +55,10 @@ defmodule Rbt.Consumer do
     :gen_statem.call(via(exchange_name, queue_name), :consume)
   end
 
+  def scale(exchange_name, queue_name, max_workers) do
+    :gen_statem.call(via(exchange_name, queue_name), {:scale, max_workers})
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
@@ -186,6 +190,22 @@ defmodule Rbt.Consumer do
   end
 
   def handle_event({:call, from}, :consume, _other_state, _data) do
+    action = {:reply, from, {:error, :invalid}}
+    {:keep_state_and_data, action}
+  end
+
+  # SCALE
+
+  def handle_event({:call, from}, {:scale, max_workers}, state, data)
+      when state in [:unsubscribed, :subscribed] do
+    new_config = %{data.config | max_workers: max_workers}
+    new_data = %{data | config: new_config}
+    set_prefetch_count!(data.channel, new_config)
+    action = {:reply, from, :ok}
+    {:keep_state, new_data, action}
+  end
+
+  def handle_event({:call, from}, {:scale, _max_workers}, _other_state, _data) do
     action = {:reply, from, {:error, :invalid}}
     {:keep_state_and_data, action}
   end
