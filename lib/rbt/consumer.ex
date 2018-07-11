@@ -2,6 +2,7 @@ defmodule Rbt.Consumer do
   @behaviour :gen_statem
 
   alias Rbt.{Channel, Backoff, Consumer.Deliver}
+  import Rbt.Registry.Consumer, only: [via: 2]
 
   @default_definitions %{
     exchange_name: nil,
@@ -266,10 +267,6 @@ defmodule Rbt.Consumer do
   ################################################################################
   ################################### PRIVATE ####################################
   ################################################################################
-
-  defp via(exchange_name, queue_name) do
-    {:via, Registry, {Registry.Rbt.Consumer, {exchange_name, queue_name}}}
-  end
 
   defp retry_exchange_name(exchange_name), do: exchange_name <> "-retries"
 

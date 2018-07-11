@@ -2,6 +2,7 @@ defmodule Rbt.Producer do
   @behaviour :gen_statem
 
   alias Rbt.{Channel, Backoff, Producer.Event}
+  import Rbt.Registry.Producer, only: [via: 1]
 
   @default_config %{
     durable_objects: false
@@ -216,10 +217,6 @@ defmodule Rbt.Producer do
   ################################################################################
   ################################### PRIVATE ####################################
   ################################################################################
-
-  defp via(exchange_name) do
-    {:via, Registry, {Registry.Rbt.Producer, exchange_name}}
-  end
 
   defp declare_exchange!(channel, exchange_name, config) do
     durable = Map.get(config, :durable_objects, @default_config.durable_objects)
