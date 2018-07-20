@@ -19,7 +19,7 @@ Work in progress, not usable yet.
 - [ ] Topic consumers
   - [x] auto retries with backoff
   - [x] forward failures to separate exchange for capture
-  - [ ] parallelized, bounded message handling
+  - [x] parallelized, bounded message handling
   - [x] instrumentation hooks
   - [x] manual consume/cancel control
   - [x] multiple content types (erlang, json)
