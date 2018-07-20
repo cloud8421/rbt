@@ -60,6 +60,14 @@ defmodule Rbt.Consumer do
     :gen_statem.call(via(exchange_name, queue_name), {:scale, max_workers})
   end
 
+  def status(exchange_name, queue_name) do
+    :gen_statem.call(via(exchange_name, queue_name), :status)
+  end
+
+  def status(consumer_ref) do
+    :gen_statem.call(consumer_ref, :status)
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
@@ -208,6 +216,14 @@ defmodule Rbt.Consumer do
 
   def handle_event({:call, from}, {:scale, _max_workers}, _other_state, _data) do
     action = {:reply, from, {:error, :invalid}}
+    {:keep_state_and_data, action}
+  end
+
+  # STATUS
+
+  def handle_event({:call, from}, :status, state, data) do
+    reply = %{state: state, data: data}
+    action = {:reply, from, reply}
     {:keep_state_and_data, action}
   end
 

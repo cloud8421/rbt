@@ -57,6 +57,14 @@ defmodule Rbt.Producer do
     :gen_statem.call(via(exchange_name), :buffer)
   end
 
+  def status(producer_ref) when is_pid(producer_ref) do
+    :gen_statem.call(producer_ref, :status)
+  end
+
+  def status(exchange_name) do
+    :gen_statem.call(via(exchange_name), :status)
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
@@ -212,6 +220,14 @@ defmodule Rbt.Producer do
     else
       :keep_state_and_data
     end
+  end
+
+  # STATUS
+
+  def handle_event({:call, from}, :status, state, data) do
+    reply = %{state: state, data: data}
+    action = {:reply, from, reply}
+    {:keep_state_and_data, action}
   end
 
   ################################################################################
