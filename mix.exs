@@ -22,8 +22,7 @@ defmodule Rbt.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ranch_proxy_protocol,
-       github: "cloud8421/ranch_proxy_protocol", ref: "ffcd8c62", override: true},
+      {:ranch_proxy_protocol, "~> 2.0", override: true},
       {:amqp, "~> 1.0"},
       {:jason, "~> 1.0", optional: true}
       # {:dep_from_hexpm, "~> 0.3.0"},
