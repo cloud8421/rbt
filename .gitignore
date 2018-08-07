@@ -24,3 +24,4 @@ rbt-*.tar
 
 /log
 .tool-versions
+.envrc
