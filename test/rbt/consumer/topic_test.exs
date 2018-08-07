@@ -1,4 +1,4 @@
-defmodule Rbt.ConsumerTest do
+defmodule Rbt.Consumer.TopicTest do
   use ExUnit.Case, async: false
 
   @rmq_test_url "amqp://guest:guest@localhost:5672/rbt-test"
@@ -41,15 +41,15 @@ defmodule Rbt.ConsumerTest do
     {:ok, _cons_conn} = Rbt.Conn.start_link(@rmq_test_url, [], :cons_conn)
     {:ok, _prod_conn} = Rbt.Conn.start_link(@rmq_test_url, [], :prod_conn)
 
-    {:ok, cons_pid} = Rbt.Consumer.start_link(:cons_conn, handler, config)
+    {:ok, cons_pid} = Rbt.Consumer.Topic.start_link(:cons_conn, handler, config)
     ref = Process.monitor(cons_pid)
     refute_receive {:DOWN, ^ref, :process, ^cons_pid, _reason}, 300
 
-    {:ok, :requested} = Rbt.Consumer.cancel("test-exchange", "test-queue")
-    :ok = Rbt.Consumer.cancel("test-exchange", "test-queue")
+    {:ok, :requested} = Rbt.Consumer.Topic.cancel("test-exchange", "test-queue")
+    :ok = Rbt.Consumer.Topic.cancel("test-exchange", "test-queue")
 
-    {:ok, :requested} = Rbt.Consumer.consume("test-exchange", "test-queue")
-    :ok = Rbt.Consumer.consume("test-exchange", "test-queue")
+    {:ok, :requested} = Rbt.Consumer.Topic.consume("test-exchange", "test-queue")
+    :ok = Rbt.Consumer.Topic.consume("test-exchange", "test-queue")
 
     {:ok, prod_pid} = Rbt.Producer.start_link(:prod_conn, %{exchange_name: "test-exchange"})
     ref = Process.monitor(prod_pid)

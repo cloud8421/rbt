@@ -1,4 +1,4 @@
-defmodule Rbt.Consumer do
+defmodule Rbt.Consumer.Topic do
   @behaviour :gen_statem
 
   alias Rbt.{Channel, Backoff, Consumer.Deliver}
