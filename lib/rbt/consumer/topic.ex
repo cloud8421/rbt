@@ -207,9 +207,8 @@ defmodule Rbt.Consumer.Topic do
 
   def handle_event({:call, from}, {:scale, max_workers}, state, data)
       when state in [:unsubscribed, :subscribed] do
-    new_config = %{data.config | max_workers: max_workers}
-    new_data = %{data | config: new_config}
-    set_prefetch_count!(data.channel, new_config)
+    new_data = put_in(data.config.max_workers, max_workers)
+    set_prefetch_count!(data.channel, new_data.config)
     action = {:reply, from, :ok}
     {:keep_state, new_data, action}
   end
