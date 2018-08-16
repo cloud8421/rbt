@@ -29,11 +29,11 @@ defmodule Rbt.Consumer.Deliver do
   end
 
   defp do_try_handle_event(event, meta, handler) do
-    case handler.handle_event(event, meta) do
-      :ok ->
-        {:ok, event}
+    case :timer.tc(handler, :handle_event, [event, meta]) do
+      {elapsed, :ok} ->
+        {:ok, event, elapsed}
 
-      error ->
+      {_elapsed, error} ->
         Tuple.append(error, event)
     end
   end

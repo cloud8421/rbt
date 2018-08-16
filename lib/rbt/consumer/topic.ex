@@ -405,8 +405,8 @@ defmodule Rbt.Consumer.Topic do
         instrument_event_skip!(event, meta, data)
         {:skip, meta}
 
-      {:ok, event} ->
-        instrument_event_ok!(event, meta, data)
+      {:ok, event, duration} ->
+        instrument_event_ok!(event, meta, data, duration)
         {:ok, meta}
 
       {:error, _retry_policy, reason, event} ->
@@ -421,8 +421,8 @@ defmodule Rbt.Consumer.Topic do
         instrument_event_skip!(event, meta, data)
         {:skip, meta}
 
-      {:ok, event} ->
-        instrument_event_ok!(event, meta, data)
+      {:ok, event, duration} ->
+        instrument_event_ok!(event, meta, data, duration)
         {:ok, meta}
 
       {:error, :retry, reason, event} ->
@@ -482,9 +482,9 @@ defmodule Rbt.Consumer.Topic do
     data.instrumentation.on_event_skip(exchange_name, queue_name, event, meta)
   end
 
-  defp instrument_event_ok!(event, meta, data) do
+  defp instrument_event_ok!(event, meta, data, duration) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_event_ok(exchange_name, queue_name, event, meta)
+    data.instrumentation.on_event_ok(exchange_name, queue_name, event, meta, duration)
   end
 
   defp instrument_event_error!(event, error, meta, data) do
