@@ -150,6 +150,11 @@ defmodule Rbt.Producer do
         actions = [{:next_event, :internal, {:queue, event}}, {:reply, from, :ok}]
         {:keep_state_and_data, actions}
 
+      :blocked ->
+        instrument_publish_error!(data, event, :channel_blocked, :queue.len(data.buffer))
+        actions = [{:next_event, :internal, {:queue, event}}, {:reply, from, :ok}]
+        {:keep_state_and_data, actions}
+
       {:error, :unsupported_content_type} = error ->
         instrument_publish_error!(data, event, :unsupported_content_type, :queue.len(data.buffer))
         action = {:reply, from, error}
