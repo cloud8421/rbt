@@ -5,8 +5,8 @@ defmodule Rbt.Application do
 
   def start(_type, _args) do
     children = [
-      {Registry, keys: :unique, name: Rbt.Registry.Consumer},
-      {Registry, keys: :unique, name: Rbt.Registry.Producer},
+      Rbt.Registry.Consumer.child_spec(),
+      Rbt.Registry.Producer.child_spec(),
       {Task.Supervisor, name: Rbt.Consumer.DefaultTaskSupervisor}
     ]
 
