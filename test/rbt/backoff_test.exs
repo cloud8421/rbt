@@ -4,6 +4,10 @@ defmodule Rbt.BackoffTest do
 
   alias Rbt.Backoff
 
+  test "requires at least one interval" do
+    assert {:error, :no_intervals} = Backoff.next_interval(%{backoff_intervals: []})
+  end
+
   property "delay is always between bounds" do
     forall intervals <- intervals(Backoff.default_intervals()) do
       state = %{backoff_intervals: intervals}

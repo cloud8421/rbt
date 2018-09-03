@@ -7,12 +7,15 @@ defmodule Rbt.Backoff do
     %{state | backoff_intervals: @default_intervals}
   end
 
+  def next_interval(%{backoff_intervals: []}) do
+    {:error, :no_intervals}
+  end
+
   def next_interval(%{backoff_intervals: backoff_interval} = state) do
     {delay, new_backoff_interval} = get_delay(backoff_interval)
     {delay, %{state | backoff_intervals: new_backoff_interval}}
   end
 
-  defp get_delay([]), do: {:error, :no_intervals}
   defp get_delay([delay]), do: {delay, [delay]}
   defp get_delay([delay | remaining]), do: {delay, remaining}
 end
