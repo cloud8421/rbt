@@ -13,6 +13,11 @@ defmodule Rbt.Data do
     {:error, :unsupported_content_type}
   end
 
+  def decode!(payload, content_type) do
+    {:ok, decoded} = decode(payload, content_type)
+    decoded
+  end
+
   def encode(payload, "application/json") do
     @json_adapter.encode(payload)
   end
@@ -23,5 +28,10 @@ defmodule Rbt.Data do
 
   def encode(_payload, _content_type) do
     {:error, :unsupported_content_type}
+  end
+
+  def encode!(payload, content_type) do
+    {:ok, encoded} = encode(payload, content_type)
+    encoded
   end
 end
