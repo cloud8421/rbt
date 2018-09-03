@@ -1,5 +1,5 @@
 defmodule Rbt.BackoffTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use PropCheck
 
   alias Rbt.Backoff
