@@ -36,7 +36,8 @@ defmodule Rbt.MixProject do
       {:ranch_proxy_protocol, "~> 2.0", override: true},
       {:amqp, "~> 1.0"},
       {:jason, "~> 1.0", optional: true},
-      {:ex_doc, "~> 0.19", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.19", only: :dev, runtime: false},
+      {:propcheck, "~> 1.1", only: :test}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
     ]
