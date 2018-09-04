@@ -69,6 +69,20 @@ defmodule Rbt.Producer do
   ################################## CALLBACKS ###################################
   ################################################################################
 
+  def child_spec(opts) do
+    conn_ref = Keyword.fetch!(opts, :conn_ref)
+    definitions = Keyword.get(opts, :definitions, %{})
+    exchange_name = Map.fetch!(definitions, :exchange_name)
+
+    %{
+      id: {__MODULE__, exchange_name},
+      start: {__MODULE__, :start_link, [conn_ref, definitions]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 500
+    }
+  end
+
   def callback_mode, do: :handle_event_function
 
   def init({conn_ref, opts}) do
