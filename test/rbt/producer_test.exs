@@ -6,7 +6,7 @@ defmodule Rbt.ProducerTest do
   test "resilience test" do
     {:ok, conn} = Rbt.Conn.start_link(@rmq_test_url, [], __MODULE__)
 
-    {:ok, pid} = Rbt.Producer.start_link(__MODULE__, %{exchange_name: "test-exchange"})
+    {:ok, pid} = Rbt.Producer.start_link(__MODULE__, %{exchange_name: "producer-exchange"})
     ref = Process.monitor(pid)
     refute_receive {:DOWN, ^ref, :process, ^pid, _reason}, 300
 
@@ -47,7 +47,7 @@ defmodule Rbt.ProducerTest do
     Enum.each(1..number_of_times, fn _ ->
       assert :ok ==
                Rbt.Producer.publish(
-                 "test-exchange",
+                 "producer-exchange",
                  "test.topic",
                  %{some: "data"},
                  content_type: "application/json"
