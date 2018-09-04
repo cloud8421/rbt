@@ -1,5 +1,6 @@
 defmodule Rbt.Producer.Event do
-  defstruct topic: nil,
+  defstruct message_id: nil,
+            topic: nil,
             data: %{},
             opts: []
 
@@ -8,8 +9,9 @@ defmodule Rbt.Producer.Event do
     persistent: false
   ]
 
-  def new(topic, event_data, opts) do
+  def new(message_id, topic, event_data, opts) do
     %__MODULE__{
+      message_id: message_id,
       topic: topic,
       data: event_data,
       opts: Keyword.merge(@default_opts, opts)

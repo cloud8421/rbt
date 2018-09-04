@@ -30,13 +30,14 @@ defmodule Rbt.Producer do
   end
 
   def publish(exchange_name, topic, event_data, opts) do
+    message_id = Keyword.get(opts, :message_id, Rbt.UUID.generate())
+
     event_opts = [
-      message_id: Keyword.get(opts, :message_id, Rbt.UUID.generate()),
       content_type: Keyword.fetch!(opts, :content_type),
       persistent: Keyword.get(opts, :persistent, false)
     ]
 
-    event = Event.new(topic, event_data, event_opts)
+    event = Event.new(message_id, topic, event_data, event_opts)
 
     :gen_statem.call(via(exchange_name), {:publish, event})
   end
@@ -266,12 +267,14 @@ defmodule Rbt.Producer do
 
     case Rbt.Data.encode(event.data, content_type) do
       {:ok, encoded} ->
+        opts = Keyword.put(event.opts, :message_id, event.message_id)
+
         AMQP.Basic.publish(
           channel,
           exchange_name,
           event.topic,
           encoded,
-          event.opts
+          opts
         )
 
       error ->
