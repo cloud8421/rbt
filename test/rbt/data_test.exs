@@ -19,20 +19,18 @@ defmodule Rbt.DataTest do
   end
 
   def json do
-    # TODO define a proper recursive json generator
-    let v <-
-          list(
-            {utf8(),
-             oneof([
-               list(json_value()),
-               json_value()
-             ])}
-          ) do
-      Enum.into(v, %{})
+    # TODO: figure out recursive json
+    # let j <- vector(5, {utf8(), oneof([json_value(), lazy(json())])}) do
+    let j <- vector(5, {utf8(), json_value()}) do
+      Enum.into(j, %{})
     end
   end
 
   def json_value do
-    oneof([utf8(), integer(), float()])
+    oneof([scalar_value(), list(scalar_value())])
+  end
+
+  def scalar_value do
+    oneof([utf8(), integer(), float(), boolean(), nil])
   end
 end
