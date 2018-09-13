@@ -15,4 +15,8 @@ defmodule Rbt.Channel do
         {:error, e}
     end
   end
+
+  def close(channel) do
+    AMQP.Channel.close(channel)
+  end
 end
