@@ -9,6 +9,7 @@ defmodule Rbt.Instrumentation.NoOp do
     def on_event_skip(_exchange_name, _queue_name, _event, _meta), do: :ok
     def on_event_ok(_exchange_name, _queue_name, _event, _meta, _duration), do: :ok
     def on_event_error(_exchange_name, _queue_name, _event, _meta, _error), do: :ok
+    def on_event_retry(_exchange_name, _queue_name, _event, _meta, _error), do: :ok
   end
 
   defmodule Producer do

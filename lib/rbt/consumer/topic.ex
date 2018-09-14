@@ -410,7 +410,7 @@ defmodule Rbt.Consumer.Topic do
         {:ok, meta}
 
       {:error, _retry_policy, reason, event} ->
-        instrument_event_error!(event, reason, meta, data)
+        instrument_event_retry!(event, reason, meta, data)
         {:error, :retry, payload, meta, :infinity}
     end
   end
@@ -430,7 +430,7 @@ defmodule Rbt.Consumer.Topic do
         {:error, :retry, payload, meta, retry_count + 1}
 
       {:error, :no_retry, reason, event} ->
-        instrument_event_error!(event, reason, meta, data)
+        instrument_event_retry!(event, reason, meta, data)
         {:error, :no_retry, meta}
     end
   end
@@ -490,5 +490,10 @@ defmodule Rbt.Consumer.Topic do
   defp instrument_event_error!(event, error, meta, data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
     data.instrumentation.on_event_error(exchange_name, queue_name, event, meta, error)
+  end
+
+  defp instrument_event_retry!(event, error, meta, data) do
+    %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
+    data.instrumentation.on_event_retry(exchange_name, queue_name, event, meta, error)
   end
 end

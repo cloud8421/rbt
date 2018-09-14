@@ -12,4 +12,5 @@ defmodule Rbt.Instrumentation.Consumer do
   @callback on_event_skip(exchange_name, queue_name, event, meta) :: :ok
   @callback on_event_ok(exchange_name, queue_name, event, meta, duration_in_us) :: :ok
   @callback on_event_error(exchange_name, queue_name, event, meta, error) :: :ok
+  @callback on_event_retry(exchange_name, queue_name, event, meta, error) :: :ok
 end
