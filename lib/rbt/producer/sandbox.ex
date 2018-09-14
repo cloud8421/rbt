@@ -29,16 +29,34 @@ defmodule Rbt.Producer.Sandbox do
     :ets.select(__MODULE__, spec)
   end
 
+  def count_by_exchange(exchange_name, producer_pid \\ self()) do
+    spec = [{{:_, exchange_name, :_, producer_pid, :"$1"}, [], [true]}]
+
+    :ets.select_count(__MODULE__, spec)
+  end
+
   def find_by_exchange_and_topic(exchange_name, topic, producer_pid \\ self()) do
     spec = [{{:_, exchange_name, topic, producer_pid, :"$1"}, [], [:"$1"]}]
 
     :ets.select(__MODULE__, spec)
   end
 
+  def count_by_exchange_and_topic(exchange_name, topic, producer_pid \\ self()) do
+    spec = [{{:_, exchange_name, topic, producer_pid, :"$1"}, [], [true]}]
+
+    :ets.select_count(__MODULE__, spec)
+  end
+
   def find_by_producer_pid(producer_pid) do
     spec = [{{:_, :_, :_, producer_pid, :"$1"}, [], [:"$1"]}]
 
     :ets.select(__MODULE__, spec)
+  end
+
+  def count_by_producer_pid(producer_pid) do
+    spec = [{{:_, :_, :_, producer_pid, :"$1"}, [], [true]}]
+
+    :ets.select_count(__MODULE__, spec)
   end
 
   defp store(exchange_name, event, publisher_pid) do
