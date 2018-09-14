@@ -9,20 +9,61 @@ defmodule Rbt.Producer.SandboxTest do
     assert :ok == publish_sample_event()
   end
 
-  test "lookup by exchange, pid implied" do
-    exchange_name = Rbt.UUID.generate()
-    :ok = publish_sample_event(exchange_name)
-    assert [event] = Sandbox.find_by_exchange(exchange_name)
-    assert event.data == %{some: "data"}
+  describe "lookup by exchange" do
+    test "with implicit caller pid" do
+      exchange_name = Rbt.UUID.generate()
+      :ok = publish_sample_event(exchange_name)
+
+      assert [event] = Sandbox.find_by_exchange(exchange_name)
+      assert event.data == %{some: "data"}
+    end
+
+    test "with explicit pid" do
+      exchange_name = Rbt.UUID.generate()
+      caller = self()
+
+      pid =
+        spawn(fn ->
+          :ok = publish_sample_event(exchange_name)
+          send(caller, :done)
+        end)
+
+      assert_receive :done
+      assert [] == Sandbox.find_by_exchange(exchange_name)
+      assert [event] = Sandbox.find_by_exchange(exchange_name, pid)
+      assert event.data == %{some: "data"}
+    end
   end
 
-  test "lookup by exchange and topic, pid implied" do
-    exchange_name = Rbt.UUID.generate()
-    topic = Rbt.UUID.generate()
-    :ok = publish_sample_event(exchange_name, topic)
-    :ok = publish_sample_event(exchange_name, topic <> "2")
-    assert [event] = Sandbox.find_by_exchange_and_topic(exchange_name, topic)
-    assert event.data == %{some: "data"}
+  describe "lookup by exchange and topic" do
+    test "with implicit pid" do
+      exchange_name = Rbt.UUID.generate()
+      topic = Rbt.UUID.generate()
+      :ok = publish_sample_event(exchange_name, topic)
+      :ok = publish_sample_event(exchange_name, topic <> "2")
+      assert [event] = Sandbox.find_by_exchange_and_topic(exchange_name, topic)
+      assert event.data == %{some: "data"}
+    end
+
+    test "with explicit pid" do
+      exchange_name = Rbt.UUID.generate()
+      topic = Rbt.UUID.generate()
+      caller = self()
+
+      pid =
+        spawn(fn ->
+          :ok = publish_sample_event(exchange_name, topic)
+          :ok = publish_sample_event(exchange_name, topic <> "2")
+          send(caller, :done)
+        end)
+
+      assert_receive :done
+      assert [] == Sandbox.find_by_exchange_and_topic(exchange_name, topic)
+      assert [] == Sandbox.find_by_exchange_and_topic(exchange_name, topic <> "2")
+      assert [_event] = Sandbox.find_by_exchange_and_topic(exchange_name, topic <> "2", pid)
+      assert [event] = Sandbox.find_by_exchange_and_topic(exchange_name, topic, pid)
+      assert event.data == %{some: "data"}
+    end
   end
 
   test "lookup by pid" do
