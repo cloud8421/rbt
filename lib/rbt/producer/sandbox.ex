@@ -1,4 +1,18 @@
 defmodule Rbt.Producer.Sandbox do
+  @moduledoc """
+  Provides a Sandbox producer which can be used in tests (the API is
+  compatible with `Rbt.Producer`.
+
+  The sandbox purpose is to provide a in-memory, concurrency-safe way to
+  produce events and verify their existence.
+
+  Each event is stored in a public ets table and it includes information about
+  the pid that produced it.
+
+  Note a pid referenced by the Sandbox is not garbage collected once
+  the corresponding process dies. This is to allow inspection of produced events
+  after their origin has disappeared.
+  """
   alias Rbt.Producer.Event
 
   def create_table! do
