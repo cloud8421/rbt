@@ -1,6 +1,6 @@
 defmodule Rbt.Registry.Producer do
   def child_spec do
-    {Registry, keys: :unique, name: Rbt.Registry.Producer}
+    {Registry, keys: :unique, name: __MODULE__}
   end
 
   def via(exchange_name) do
