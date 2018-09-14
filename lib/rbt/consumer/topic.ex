@@ -242,7 +242,7 @@ defmodule Rbt.Consumer.Topic do
     end
   end
 
-  def handle_event(:info, {_task_ref, result}, :subscribed, data) do
+  def handle_event(:info, {task_ref, result}, :subscribed, data) when is_reference(task_ref) do
     case result do
       {:skip, meta} ->
         ack!(data.channel, meta.delivery_tag)
