@@ -5,11 +5,7 @@ defmodule Rbt.ConnTest do
 
   describe "uri validation" do
     test "exits when invalid" do
-      Process.flag(:trap_exit, true)
-
-      Conn.start_link(1)
-
-      assert_receive {:EXIT, _pid, {:invalid_uri, :expected_string_uri}}
+      assert {:error, {:invalid_uri, :expected_string_uri}} = Conn.start_link(1)
     end
 
     test "starts when valid" do
