@@ -23,4 +23,20 @@ defmodule Rbt.Instrumentation.NoOp do
     def on_publish_error(_exchange_name, _event, _error, _buffer_size), do: :ok
     def on_queue(_exchange_name, _event, _buffer_size), do: :ok
   end
+
+  defmodule Rpc.Client do
+    @behaviour Rbt.Instrumentation.Rpc.Client
+
+    def on_rpc_start(_namespace, _correlation_id), do: :ok
+    def on_rpc_end(_namespace, _correlation_id, _duration), do: :ok
+  end
+
+  defmodule Rpc.Server do
+    @behaviour Rbt.Instrumentation.Rpc.Server
+
+    def setup(_namespace), do: :ok
+    def teardown(_namespace), do: :ok
+    def on_process(_namespace, _duration), do: :ok
+    def on_error(_namespace, _reason), do: :ok
+  end
 end

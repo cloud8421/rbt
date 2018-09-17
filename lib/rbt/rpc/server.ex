@@ -25,10 +25,14 @@ defmodule Rbt.Rpc.Server do
 
   ## Usage
 
-  Mount the `Rbt.Rpc.ServerSupervisor` in the target application, giving it a list of namespaces and a name:
+  Mount the `Rbt.Rpc.Server` in the target application:
 
       children = [
-        {Rbt.Rpc.ServerSupervisor, namespaces: ["chat"], name: Chat.Rbt.Rpc.ServerSupervisor}
+        Rbt.Rpc.Server.child_spec(
+          conn_ref: :rpc_server_conn,
+          namespace: "rbt-rpc-server-test",
+          config: %{max_workers: 20}
+        )
       ]
 
   ## Implementation details
@@ -73,7 +77,7 @@ defmodule Rbt.Rpc.Server do
             consumer_tag: nil,
             backoff_intervals: Backoff.default_intervals(),
             task_supervisor: Rbt.Rpc.DefaultTaskSupervisor,
-            instrumentation: Rbt.Instrumentation.NoOp.RpcServer
+            instrumentation: Rbt.Instrumentation.NoOp.Rpc.Server
 
   def start_link(conn_ref, namespace, config) do
     :gen_statem.start_link(__MODULE__, {conn_ref, namespace, config}, [])
@@ -106,6 +110,10 @@ defmodule Rbt.Rpc.Server do
       queue_opts: Map.get(config, :queue_opts, @default_queue_opts),
       max_workers: Map.get(config, :max_workers, @default_max_workers)
     }
+
+    Process.flag(:trap_exit, true)
+
+    instrument_setup!(namespace, data)
 
     action = {:next_event, :internal, :try_declare}
     {:ok, :idle, data, action}
@@ -191,7 +199,7 @@ defmodule Rbt.Rpc.Server do
 
   def handle_event(:info, {_task_ref, result}, :ready, data) do
     case result do
-      {:ok, value, meta} ->
+      {:ok, {elapsed_us, value}, meta} ->
         options = [
           correlation_id: meta.correlation_id,
           mandatory: true
@@ -205,13 +213,34 @@ defmodule Rbt.Rpc.Server do
           options
         )
 
+        instrument_process!(elapsed_us, data)
+
         ack!(data.channel, meta.delivery_tag)
 
-      {:error, _reason, meta} ->
-        AMQP.Basic.reject(data.channel, meta.delivery_tag, requeue: false)
+      {:error, reason, meta} ->
+        options = [
+          correlation_id: meta.correlation_id,
+          mandatory: true
+        ]
+
+        AMQP.Basic.publish(
+          data.channel,
+          @default_exchange,
+          meta.reply_to,
+          Data.encode!({:error, reason}, "application/octet-stream"),
+          options
+        )
+
+        instrument_error!(reason, data)
+
+        ack!(data.channel, meta.delivery_tag)
     end
 
     :keep_state_and_data
+  end
+
+  def terminate(_reason, _state, data) do
+    instrument_teardown!(data.namespace, data)
   end
 
   ################################################################################
@@ -234,7 +263,7 @@ defmodule Rbt.Rpc.Server do
 
   defp process!(payload) do
     case Data.decode!(payload, "application/octet-stream") do
-      {:ok, {m, f, a}} ->
+      {m, f, a} ->
         do_process(m, f, a)
 
       other ->
@@ -244,7 +273,7 @@ defmodule Rbt.Rpc.Server do
 
   defp do_process(m, f, a) do
     try do
-      {:ok, apply(m, f, a)}
+      {:ok, :timer.tc(m, f, a)}
     rescue
       error ->
         {:error, error}
@@ -255,5 +284,25 @@ defmodule Rbt.Rpc.Server do
       _exit, reason ->
         {:error, reason}
     end
+  end
+
+  ################################################################################
+  ############################### INSTRUMENTATION ################################
+  ################################################################################
+
+  defp instrument_setup!(namespace, data) do
+    data.instrumentation.setup(namespace)
+  end
+
+  defp instrument_teardown!(namespace, data) do
+    data.instrumentation.teardown(namespace)
+  end
+
+  defp instrument_process!(duration, data) do
+    data.instrumentation.on_process(data.namespace, duration)
+  end
+
+  defp instrument_error!(reason, data) do
+    data.instrumentation.on_error(data.namespace, reason)
   end
 end
