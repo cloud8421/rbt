@@ -29,6 +29,6 @@ Work in progress, not usable yet.
   - [x] instrumentation hooks
   - [x] multiple content types (erlang, json)
   - [x] test helpers
-- [ ] RPC server
-- [ ] RPC client
+- [x] RPC server
+- [x] RPC client
 - [ ] Complete docs
