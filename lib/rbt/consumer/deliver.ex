@@ -1,4 +1,6 @@
 defmodule Rbt.Consumer.Deliver do
+  @moduledoc false
+
   def handle(payload, meta, consumer_config) do
     case Rbt.Data.decode(payload, meta.content_type) do
       {:ok, decoded} ->
