@@ -19,7 +19,7 @@ defmodule Rbt.MixProject do
       homepage_url: "https://github.com/cloud8421/rbt",
       docs: [main: "readme", extras: ["README.md"]],
       deps: deps(),
-      dialyzer_warnings: [:unmatched_returns, :error_handling, :race_conditions, :unknown],
+      dialyzer_warnings: [:error_handling, :race_conditions, :unknown],
       dialyzer_ignored_warnings: [
         {:warn_contract_supertype, :_, {:extra_range, [:_, :__protocol__, 1, :_, :_]}}
       ]

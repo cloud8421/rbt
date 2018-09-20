@@ -9,11 +9,24 @@ defmodule Rbt.Producer.Event do
     persistent: false
   ]
 
-  def new(message_id, topic, event_data, opts) do
+  @type message_id :: String.t()
+  @type topic :: String.t()
+  @type data :: %{optional(String.t()) => any()}
+  @type opts :: Keyword.t()
+
+  @type t :: %__MODULE__{
+          message_id: nil | message_id(),
+          topic: nil | topic(),
+          data: data(),
+          opts: opts()
+        }
+
+  @spec new(message_id(), topic(), data(), opts()) :: t()
+  def new(message_id, topic, data, opts) do
     %__MODULE__{
       message_id: message_id,
       topic: topic,
-      data: event_data,
+      data: data,
       opts: Keyword.merge(@default_opts, opts)
     }
   end

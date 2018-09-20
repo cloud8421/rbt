@@ -17,7 +17,11 @@ defmodule Rbt.Conn do
 
   @type url :: String.t()
   @type open_opts :: Keyword.t()
-  @type name :: atom | :gen_statem.server_name()
+  # compatible with gen_statem
+  @type name :: GenServer.name() | {:local, atom()}
+  # compatible with gen_statem
+  @type server_ref :: GenServer.server()
+  @type start_ret :: {:ok, pid()} | {:error, term()}
 
   def child_spec(opts) do
     uri = Keyword.fetch!(opts, :uri)
@@ -34,21 +38,20 @@ defmodule Rbt.Conn do
   end
 
   @impl true
-  @spec callback_mode :: :gen_statem.callback_mode()
   def callback_mode, do: :state_functions
 
-  @spec start_link(url) :: :gen_statem.start_ret()
+  @spec start_link(url) :: start_ret()
   def start_link(url) do
     start_link(url, @default_open_opts)
   end
 
-  @spec start_link(url, open_opts) :: :gen_statem.start_ret()
+  @spec start_link(url, open_opts) :: start_ret()
   def start_link(uri, open_opts) do
     open_opts = Keyword.merge(@default_open_opts, open_opts)
     :gen_statem.start_link(__MODULE__, {uri, open_opts}, [])
   end
 
-  @spec start_link(url, open_opts, name) :: :gen_statem.start_ret()
+  @spec start_link(url, open_opts, name) :: start_ret()
   def start_link(uri, open_opts, name) when is_atom(name) do
     start_link(uri, open_opts, {:local, name})
   end
@@ -58,12 +61,12 @@ defmodule Rbt.Conn do
     :gen_statem.start_link(name, __MODULE__, {uri, open_opts}, [])
   end
 
-  @spec get(:gen_statem.server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
+  @spec get(server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
   def get(ref) do
     :gen_statem.call(ref, :get)
   end
 
-  @spec close(:gen_statem.server_ref()) :: :ok
+  @spec close(server_ref()) :: :ok
   def close(ref) do
     :gen_statem.call(ref, :close)
   end
