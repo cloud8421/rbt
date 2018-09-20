@@ -7,7 +7,8 @@ defmodule Rbt.Producer do
   @default_exchange_name ""
 
   @default_config %{
-    durable_objects: false
+    durable_objects: false,
+    exchange_type: :topic
   }
 
   @config_keys Map.keys(@default_config)
@@ -261,7 +262,7 @@ defmodule Rbt.Producer do
   defp declare_exchange!(channel, exchange_name, config) do
     durable = Map.get(config, :durable_objects, @default_config.durable_objects)
 
-    :ok = AMQP.Exchange.declare(channel, exchange_name, :topic, durable: durable)
+    :ok = AMQP.Exchange.declare(channel, exchange_name, config.exchange_type, durable: durable)
   end
 
   # PUBLISHING
