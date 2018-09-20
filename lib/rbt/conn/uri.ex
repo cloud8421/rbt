@@ -1,5 +1,6 @@
 defmodule Rbt.Conn.URI do
   @type t :: String.t()
+  @type merge_opts :: %{optional(binary()) => binary()}
 
   @spec validate(t) :: :ok | {:error, term()}
   def validate(uri) do
@@ -9,17 +10,18 @@ defmodule Rbt.Conn.URI do
     end
   end
 
-  @spec merge_options(t, Enum.t()) :: t
-  def merge_options(base_uri, options) do
+  @spec merge_options(t, merge_opts) :: t
+  def merge_options(base_uri, opts) do
     uri = URI.parse(base_uri)
 
     final_query =
       case uri.query do
         nil ->
-          options
+          opts
 
-        options ->
-          URI.decode_query(options, options)
+        existing_query_string ->
+          existing_opts = URI.decode_query(existing_query_string)
+          Map.merge(existing_opts, opts)
       end
 
     uri
