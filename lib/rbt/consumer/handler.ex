@@ -43,6 +43,7 @@ defmodule Rbt.Consumer.Handler do
   Given a defined handler, this is a minimum setup:
 
       consumer_config = %{
+        handler: MyHandler,
         definitions: %{
           exchange_name: "test-exchange",
           queue_name: "test-queue",
@@ -52,10 +53,10 @@ defmodule Rbt.Consumer.Handler do
       }
 
       children = [
-        worker(Rbt.Consumer, MyHandler, consumer_config)
+        {Rbt.Consumer.Topic, consumer_config}
       ]
 
-  For more details on the consumer itself, see `Rbt.Consumer`.
+  For more details on the consumer itself, see `Rbt.Consumer.Topic`.
   """
   @type event :: term
   @type meta :: map
