@@ -65,22 +65,18 @@ defmodule Rbt.IntegrationTest do
 
       children = [
         {SpyHandler, test_process},
-        Rbt.Conn.child_spec(uri: vhost_url, name: :prod_conn),
-        Rbt.Conn.child_spec(uri: vhost_url, name: :cons_conn),
-        Rbt.Producer.child_spec(
-          conn_ref: :prod_conn,
-          definitions: %{exchange_name: "test-exchange"}
-        ),
-        Rbt.Consumer.Topic.child_spec(
-          conn_ref: :cons_conn,
-          handler: SpyHandler,
-          definitions: %{
-            exchange_name: "test-exchange",
-            queue_name: "test-queue",
-            routing_keys: ["test.topic"]
-          },
-          max_retries: 3
-        )
+        {Rbt.Conn, uri: vhost_url, name: :prod_conn},
+        {Rbt.Conn, uri: vhost_url, name: :cons_conn},
+        {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
+        {Rbt.Consumer.Topic,
+         conn_ref: :cons_conn,
+         handler: SpyHandler,
+         definitions: %{
+           exchange_name: "test-exchange",
+           queue_name: "test-queue",
+           routing_keys: ["test.topic"]
+         },
+         max_retries: 3}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)

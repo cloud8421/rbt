@@ -12,14 +12,11 @@ defmodule Rbt.RpcTest do
       vhost_url = Keyword.fetch!(opts, :vhost_url)
 
       children = [
-        Rbt.Conn.child_spec(uri: vhost_url, name: :rpc_server_conn),
-        Rbt.Conn.child_spec(uri: vhost_url, name: :rpc_client_conn),
-        Rbt.Rpc.Server.child_spec(
-          conn_ref: :rpc_server_conn,
-          namespace: "rbt-rpc-server-test",
-          config: %{max_workers: 20}
-        ),
-        Rbt.Rpc.Client.child_spec(conn_ref: :rpc_client_conn, name: RpcClient)
+        {Rbt.Conn, uri: vhost_url, name: :rpc_server_conn},
+        {Rbt.Conn, uri: vhost_url, name: :rpc_client_conn},
+        {Rbt.Rpc.Server,
+         conn_ref: :rpc_server_conn, namespace: "rbt-rpc-server-test", config: %{max_workers: 20}},
+        {Rbt.Rpc.Client, conn_ref: :rpc_client_conn, name: RpcClient}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)
