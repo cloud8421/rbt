@@ -1,5 +1,8 @@
 defmodule Rbt.Instrumentation.NoOp do
+  @moduledoc false
+
   defmodule Consumer do
+    @moduledoc false
     @behaviour Rbt.Instrumentation.Consumer
 
     def setup(_exchange_name, _queue_name), do: :ok
@@ -13,6 +16,7 @@ defmodule Rbt.Instrumentation.NoOp do
   end
 
   defmodule Producer do
+    @moduledoc false
     @behaviour Rbt.Instrumentation.Producer
 
     def setup(_exchange_name), do: :ok
@@ -25,6 +29,7 @@ defmodule Rbt.Instrumentation.NoOp do
   end
 
   defmodule Rpc.Client do
+    @moduledoc false
     @behaviour Rbt.Instrumentation.Rpc.Client
 
     def on_rpc_start(_namespace, _correlation_id), do: :ok
@@ -32,6 +37,7 @@ defmodule Rbt.Instrumentation.NoOp do
   end
 
   defmodule Rpc.Server do
+    @moduledoc false
     @behaviour Rbt.Instrumentation.Rpc.Server
 
     def setup(_namespace), do: :ok
