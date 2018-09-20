@@ -163,12 +163,12 @@ defmodule Rbt.Producer do
 
   def handle_event({:call, from}, {:publish, event}, :active, data) do
     case publish_event(event, data.channel, data.exchange_name) do
-      :closing ->
+      {:error, :closing} ->
         instrument_publish_error!(data, event, :channel_closing, :queue.len(data.buffer))
         actions = [{:next_event, :internal, {:queue, event}}, {:reply, from, :ok}]
         {:keep_state_and_data, actions}
 
-      :blocked ->
+      {:error, :blocked} ->
         instrument_publish_error!(data, event, :channel_blocked, :queue.len(data.buffer))
         actions = [{:next_event, :internal, {:queue, event}}, {:reply, from, :ok}]
         {:keep_state_and_data, actions}
@@ -200,7 +200,7 @@ defmodule Rbt.Producer do
 
       {{:value, event}, new_buffer} ->
         case publish_event(event, data.channel, data.exchange_name) do
-          :closing ->
+          {:error, :closing} ->
             instrument_publish_error!(data, event, :channel_closing, :queue.len(data.buffer))
             :keep_state_and_data
 
