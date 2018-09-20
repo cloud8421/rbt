@@ -18,7 +18,11 @@ defmodule Rbt.MixProject do
       source_url: "https://github.com/cloud8421/rbt",
       homepage_url: "https://github.com/cloud8421/rbt",
       docs: [main: "readme", extras: ["README.md"]],
-      deps: deps()
+      deps: deps(),
+      dialyzer_warnings: [:unmatched_returns, :error_handling, :race_conditions, :unknown],
+      dialyzer_ignored_warnings: [
+        {:warn_contract_supertype, :_, {:extra_range, [:_, :__protocol__, 1, :_, :_]}}
+      ]
     ]
   end
 
@@ -36,6 +40,7 @@ defmodule Rbt.MixProject do
       {:ranch_proxy_protocol, "~> 2.0", override: true},
       {:amqp, "~> 1.0"},
       {:jason, "~> 1.0", optional: true},
+      {:dialyzex, "~> 1.2", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:propcheck, "~> 1.1", only: :test}
       # {:dep_from_hexpm, "~> 0.3.0"},
