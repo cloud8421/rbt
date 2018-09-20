@@ -4,6 +4,8 @@ defmodule Rbt.Producer do
   alias Rbt.{Channel, Backoff, Producer.Event}
   import Rbt.Registry.Producer, only: [via: 1]
 
+  @default_exchange_name ""
+
   @default_config %{
     durable_objects: false
   }
@@ -254,6 +256,8 @@ defmodule Rbt.Producer do
   ################################### PRIVATE ####################################
   ################################################################################
 
+  defp declare_exchange!(_channel, :default, _config), do: :ok
+
   defp declare_exchange!(channel, exchange_name, config) do
     durable = Map.get(config, :durable_objects, @default_config.durable_objects)
 
@@ -271,7 +275,7 @@ defmodule Rbt.Producer do
 
         AMQP.Basic.publish(
           channel,
-          exchange_name,
+          normalize_exchange_name(exchange_name),
           event.topic,
           encoded,
           opts
@@ -281,6 +285,9 @@ defmodule Rbt.Producer do
         error
     end
   end
+
+  defp normalize_exchange_name(:default), do: @default_exchange_name
+  defp normalize_exchange_name(name), do: name
 
   # INSTRUMENTATION
 
