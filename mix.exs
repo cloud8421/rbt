@@ -19,6 +19,7 @@ defmodule Rbt.MixProject do
       homepage_url: "https://github.com/cloud8421/rbt",
       docs: [main: "readme", extras: ["README.md"]],
       deps: deps(),
+      elixirc_paths: compile_paths(Mix.env()),
       dialyzer_warnings: [:error_handling, :race_conditions, :unknown],
       dialyzer_ignored_warnings: [
         {:warn_contract_supertype, :_, {:extra_range, [:_, :__protocol__, 1, :_, :_]}}
@@ -55,4 +56,7 @@ defmodule Rbt.MixProject do
       links: %{"GitHub" => "https://github.com/cloud8421/rbt"}
     ]
   end
+
+  defp compile_paths(:test), do: ["lib", "test/support"]
+  defp compile_paths(_), do: ["lib"]
 end
