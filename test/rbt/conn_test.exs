@@ -43,5 +43,9 @@ defmodule Rbt.ConnTest do
 
       assert {:error, :disconnected} == Conn.get(pid)
     end
+
+    test "returns error when invalid ref" do
+      assert {:error, :non_existent} == Conn.get(:non_existent)
+    end
   end
 end

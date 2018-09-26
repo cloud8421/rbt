@@ -1,18 +1,13 @@
 defmodule Rbt.Channel do
+  @moduledoc """
+  This module includes functions to interact with channels.
+  """
   alias Rbt.Conn
 
   def open(conn_name) do
-    try do
-      case Conn.get(conn_name) do
-        {:ok, conn} -> AMQP.Channel.open(conn)
-        error -> error
-      end
-    catch
-      e ->
-        {:error, e}
-
-      _exit, e ->
-        {:error, e}
+    case Conn.get(conn_name) do
+      {:ok, conn} -> AMQP.Channel.open(conn)
+      error -> error
     end
   end
 

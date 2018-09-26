@@ -61,9 +61,15 @@ defmodule Rbt.Conn do
     :gen_statem.start_link(name, __MODULE__, {uri, open_opts}, [])
   end
 
-  @spec get(server_ref()) :: {:ok, AMQP.Connection.t()} | {:error, :disconnected}
+  @spec get(server_ref()) ::
+          {:ok, AMQP.Connection.t()} | {:error, :disconnected} | {:error, :non_existent}
   def get(ref) do
-    :gen_statem.call(ref, :get)
+    try do
+      :gen_statem.call(ref, :get, 3000)
+    catch
+      _exit, {type, _reason} when type in [:noproc, :normal] ->
+        {:error, :non_existent}
+    end
   end
 
   @spec close(server_ref()) :: :ok
