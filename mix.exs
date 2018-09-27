@@ -17,7 +17,7 @@ defmodule Rbt.MixProject do
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/cloud8421/rbt",
       homepage_url: "https://github.com/cloud8421/rbt",
-      docs: [main: "readme", extras: ["README.md"]],
+      docs: docs(),
       deps: deps(),
       dialyzer_warnings: [:error_handling, :race_conditions, :unknown],
       dialyzer_ignored_warnings: [
@@ -53,6 +53,49 @@ defmodule Rbt.MixProject do
       maintainers: ["Claudio Ortolina <cloud8421@gmail.com>"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/cloud8421/rbt"}
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: [
+        "README.md",
+        "CODE_OF_CONDUCT.md"
+      ],
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/cloud8421/rbt",
+      groups_for_modules: [
+        "Conns and Channels": [
+          Rbt.Channel,
+          Rbt.Conn,
+          Rbt.Conn.URI
+        ],
+        Consumers: [
+          Rbt.Consumer.Topic,
+          Rbt.Consumer.Handler
+        ],
+        Producers: [
+          Rbt.Producer
+        ],
+        RPC: [
+          Rbt.Rpc.Server,
+          Rbt.Rpc.Client
+        ],
+        Instrumentation: [
+          Rbt.Instrumentation.Consumer,
+          Rbt.Instrumentation.Producer,
+          Rbt.Instrumentation.Rpc.Server,
+          Rbt.Instrumentation.Rpc.Client
+        ],
+        Testing: [
+          Rbt.Producer.Sandbox
+        ],
+        Utils: [
+          Rbt.Data,
+          Rbt.UUID
+        ]
+      ]
     ]
   end
 end
