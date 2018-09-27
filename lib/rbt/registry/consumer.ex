@@ -1,4 +1,6 @@
 defmodule Rbt.Registry.Consumer do
+  @moduledoc false
+
   def child_spec do
     {Registry, keys: :unique, name: __MODULE__}
   end

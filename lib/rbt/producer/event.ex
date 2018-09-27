@@ -1,4 +1,6 @@
 defmodule Rbt.Producer.Event do
+  @moduledoc false
+
   defstruct message_id: nil,
             topic: nil,
             data: %{},
