@@ -58,7 +58,17 @@ defmodule Rbt.Consumer.Handler do
 
   For more details on the consumer itself, see `Rbt.Consumer.Topic`.
   """
+
+  @typedoc """
+  An event can be any serializable term (see `Rbt.Data` for details
+  on what's supported out of the box, but a map is recommended to improve
+  management of backwards compatibility.
+  """
   @type event :: term
+
+  @typedoc """
+  Metadata for incoming messages, in form of a map.
+  """
   @type meta :: map
   @type reason :: term
   @type retry_policy :: :retry | :no_retry

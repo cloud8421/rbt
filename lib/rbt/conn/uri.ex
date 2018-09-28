@@ -4,7 +4,14 @@ defmodule Rbt.Conn.URI do
   as specified at <https://www.rabbitmq.com/uri-spec.html>.
   """
 
+  @typedoc "A RabbitMQ server uri in string form"
   @type t :: String.t()
+
+  @typedoc """
+  A map representing connection options.
+
+  For more information on usage, see `Rbt.Conn.URI.merge_options/2`.
+  """
   @type merge_opts :: %{optional(binary()) => binary()}
 
   @doc """
