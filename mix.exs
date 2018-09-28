@@ -1,7 +1,7 @@
 defmodule Rbt.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @description """
   NOT COMPLETE OR PRODUCTION READY. A set of higher level tools to compose RabbitMQ workflows.
   """
@@ -12,7 +12,7 @@ defmodule Rbt.MixProject do
       version: @version,
       description: @description,
       package: package(),
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.6",
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/cloud8421/rbt",
