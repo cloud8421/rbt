@@ -82,12 +82,7 @@ defmodule Rbt.MixProject do
           Rbt.Rpc.Server,
           Rbt.Rpc.Client
         ],
-        Instrumentation: [
-          Rbt.Instrumentation.Consumer,
-          Rbt.Instrumentation.Producer,
-          Rbt.Instrumentation.Rpc.Server,
-          Rbt.Instrumentation.Rpc.Client
-        ],
+        Instrumentation: ~r/Instrumentation/,
         Testing: [
           Rbt.Producer.Sandbox
         ],
