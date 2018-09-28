@@ -11,4 +11,4 @@ before_script:
   - sudo rabbitmqctl add_vhost rbt-test
   - sudo rabbitmqctl set_permissions -p rbt-test guest ".*" ".*" ".*"
 script:
-  - mix do deps.get, test
+  - mix do deps.get, coveralls.travis

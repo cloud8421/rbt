@@ -19,6 +19,8 @@ defmodule Rbt.MixProject do
       homepage_url: "https://github.com/cloud8421/rbt",
       docs: docs(),
       deps: deps(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [coveralls: :test],
       dialyzer_warnings: [:error_handling, :race_conditions, :unknown],
       dialyzer_ignored_warnings: [
         {:warn_contract_supertype, :_, {:extra_range, [:_, :__protocol__, 1, :_, :_]}}
@@ -42,7 +44,8 @@ defmodule Rbt.MixProject do
       {:jason, "~> 1.0", optional: true},
       {:dialyzex, "~> 1.2", only: :dev},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:propcheck, "~> 1.1", only: :test}
+      {:propcheck, "~> 1.1", only: :test},
+      {:excoveralls, "~> 0.10.1", only: :test, runtime: false}
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
     ]

@@ -1,5 +1,8 @@
 # Rbt
 
+[![Build Status](https://travis-ci.org/cloud8421/rbt.svg?branch=master)](https://travis-ci.org/cloud8421/rbt)
+[![Coverage Status](https://coveralls.io/repos/github/cloud8421/rbt/badge.svg?branch=coverage)](https://coveralls.io/github/cloud8421/rbt?branch=coverage)
+
 Work in progress, not usable yet.
 
 ## Guidelines
