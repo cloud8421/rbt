@@ -14,6 +14,7 @@ defmodule Rbt.MixProject do
       package: package(),
       version: @version,
       elixir: "~> 1.6",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/cloud8421/rbt",
       homepage_url: "https://github.com/cloud8421/rbt",
@@ -35,6 +36,9 @@ defmodule Rbt.MixProject do
       mod: {Rbt.Application, []}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_env), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
