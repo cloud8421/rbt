@@ -274,7 +274,7 @@ defmodule Rbt.Producer do
   defp declare_exchange!(_channel, :default, _config), do: :ok
 
   defp declare_exchange!(channel, exchange_name, config) do
-    durable = Map.get(config, :durable_objects, @default_config.durable_objects)
+    durable = Map.fetch!(config, :durable_objects)
 
     :ok = AMQP.Exchange.declare(channel, exchange_name, config.exchange_type, durable: durable)
   end

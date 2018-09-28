@@ -290,7 +290,7 @@ defmodule Rbt.Consumer.Topic do
   # AMQP operations
 
   defp set_prefetch_count!(channel, config) do
-    max_workers = Map.get(config, :max_workers, @default_config.max_workers)
+    max_workers = Map.fetch!(config, :max_workers)
     :ok = AMQP.Basic.qos(channel, prefetch_count: max_workers)
   end
 
@@ -321,7 +321,7 @@ defmodule Rbt.Consumer.Topic do
   end
 
   defp setup_forward_failure_objects!(channel, definitions, config) do
-    if Map.get(config, :forward_failures, @default_config.forward_failures) do
+    if Map.fetch!(config, :forward_failures) do
       declare_exchange!(channel, failure_exchange_name(definitions.exchange_name), config)
     else
       :ok
@@ -329,14 +329,14 @@ defmodule Rbt.Consumer.Topic do
   end
 
   defp declare_exchange!(channel, exchange_name, config) do
-    durable = Map.get(config, :durable_objects, @default_config.durable_objects)
+    durable = Map.fetch!(config, :durable_objects)
 
     :ok = AMQP.Exchange.declare(channel, exchange_name, :topic, durable: durable)
   end
 
   defp declare_queue!(channel, exchange_name, queue_name, config) do
-    durable = Map.get(config, :durable_objects, @default_config.durable_objects)
-    forward_failures = Map.get(config, :forward_failures, @default_config.forward_failures)
+    durable = Map.fetch!(config, :durable_objects)
+    forward_failures = Map.fetch!(config, :forward_failures)
 
     queue_opts =
       if forward_failures do
