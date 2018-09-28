@@ -11,6 +11,10 @@ defmodule Rbt.ConnTest do
     test "starts when valid" do
       assert {:ok, _pid} = Conn.start_link("amqp://")
     end
+
+    test "starts when valid with opts" do
+      assert {:ok, _pid} = Conn.start_link("amqp://", heartbeat: 30)
+    end
   end
 
   describe "connection open" do

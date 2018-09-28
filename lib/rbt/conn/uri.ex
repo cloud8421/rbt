@@ -7,13 +7,6 @@ defmodule Rbt.Conn.URI do
   @typedoc "A RabbitMQ server uri in string form"
   @type t :: String.t()
 
-  @typedoc """
-  A map representing connection options.
-
-  For more information on usage, see `Rbt.Conn.URI.merge_options/2`.
-  """
-  @type merge_opts :: %{optional(binary()) => binary()}
-
   @doc """
   Validates a uri. Please refer to `amqp_uri.parse/1` (docs at
   <https://hexdocs.pm/amqp_client/3.7.7/>) for details on the types of errors
@@ -41,21 +34,23 @@ defmodule Rbt.Conn.URI do
   Specifically:
 
       iex> uri = "amqp://guest:guest@localhost:15672/my-host?timeout=30"
-      iex> Rbt.Conn.URI.merge_options(uri, %{"timeout" => 60})
+      iex> Rbt.Conn.URI.merge_options(uri, timeout: 60)
       "amqp://guest:guest@localhost:15672/my-host?timeout=60"
+
   """
-  @spec merge_options(t, merge_opts) :: t
+  @spec merge_options(t, Rbt.Conn.open_opts()) :: t
   def merge_options(base_uri, opts) do
     uri = URI.parse(base_uri)
+    new_opts = Enum.into(opts, %{}, fn {k, v} -> {to_string(k), v} end)
 
     final_query =
       case uri.query do
         nil ->
-          opts
+          new_opts
 
         existing_query_string ->
           existing_opts = URI.decode_query(existing_query_string)
-          Map.merge(existing_opts, opts)
+          Map.merge(existing_opts, new_opts)
       end
 
     uri
