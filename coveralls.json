@@ -1,0 +1,11 @@
+{
+  "skip_files": [
+    "lib/rbt/instrumentation/rpc/client.ex",
+    "lib/rbt/instrumentation/rpc/server.ex",
+    "lib/rbt/instrumentation/consumer.ex",
+    "lib/rbt/instrumentation/no_op.ex",
+    "lib/rbt/instrumentation/producer.ex",
+    "lib/rbt/consumer/handler.ex",
+    "lib/rbt/uuid.ex"
+  ]
+}
