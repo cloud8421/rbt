@@ -23,12 +23,23 @@ defmodule Rbt.Conn do
             conn: nil,
             mon_ref: nil
 
+  @typedoc "The AMQP url of the server"
   @type url :: String.t()
+
+  @typedoc """
+  A kw list representing connection options.
+
+  For more information on usage, see `Rbt.Conn.URI.merge_options/2`.
+  """
   @type open_opts :: Keyword.t()
-  # compatible with gen_statem
+
+  @typedoc "The name of the connection, used by all other Rbt entities"
   @type name :: GenServer.name() | {:local, atom()}
-  # compatible with gen_statem
+
+  @typedoc "The name or pid of the connection"
   @type server_ref :: GenServer.server()
+
+  @typedoc "The possible outcome of starting a connection process"
   @type start_ret :: {:ok, pid()} | {:error, term()}
 
   @doc """
