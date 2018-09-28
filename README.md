@@ -90,3 +90,39 @@ To publish a message, it's possible to call:
 ```elixir
 Rbt.Producer.publish("test-exchange", "test.topic", %{some: "data"}, message_id: "my-client-id")
 ```
+
+## Testable components
+
+Here's some strategies to write testable components based on Rbt.
+
+### Consumer handlers
+
+As a handler needs to implement a `handle_event/2` function, it's possible to make it easier to test by implementing a `handle_event/3` function (not a callback) which provides a third argument with defaults used for dependency injection.
+
+For example:
+
+```elixir
+defmodule MyHandlerWhichRepublishes do
+  use Rbt.Consumer.Handler
+
+  @default_context %{
+    producer: Rbt.Producer
+  }
+
+  def handle_event(event, meta, context \\ @default_context) do
+    # do some work
+    context.producer.publish("new-exchange", "new-topic", %{some: "new data"})
+  end
+end
+```
+
+In the snippet above, we provide a context map with a `producer` key, which is the module we want to use to produce new events. In our implementation
+code, this module will use `Rbt.Producer`.
+
+When we test this function, we can override it with `Rbt.Producer.Sandbox`:
+
+```elixir
+test_context = %{producer: Rbt.Producer.Sandbox}
+assert :ok == MyHandlerWhichRepublishes.handle_event(%{some: "data"}, %{}, test_context)
+assert 1 == Rbt.Producer.Sandbox.count_by_exchange("new-exchange")
+```
