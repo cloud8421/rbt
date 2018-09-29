@@ -25,3 +25,4 @@ rbt-*.tar
 /log
 .tool-versions
 .envrc
+.elixir_ls
