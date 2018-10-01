@@ -35,13 +35,21 @@ defmodule Rbt.Backoff do
   Given a map with intervals, returns the next interval and the updated map
   with the next intervals sequence.
 
+  In the unlikely scenario that the intervals list is empty, the function
+  returns the highest possible interval for the requested delay (and subsequent
+  ones).
+
       iex> m = %{backoff_intervals: [100, 500, 2000], name: "example"}
       iex> Rbt.Backoff.next_interval(m)
       {:ok, 100, %{backoff_intervals: [500, 2000], name: "example"}}
+
+      iex> m = %{backoff_intervals: [], name: "example"}
+      iex> Rbt.Backoff.next_interval(m)
+      {:ok, 30000, %{backoff_intervals: [30000], name: "example"}}
   """
   @spec next_interval(map_with_intervals()) :: {:ok, pos_integer(), map_with_intervals()}
-  def next_interval(%{backoff_intervals: []}) do
-    {:ok, @max_interval, [@max_interval]}
+  def next_interval(%{backoff_intervals: []} = state) do
+    {:ok, @max_interval, %{state | backoff_intervals: [@max_interval]}}
   end
 
   def next_interval(%{backoff_intervals: backoff_interval} = state) do

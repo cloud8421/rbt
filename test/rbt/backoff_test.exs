@@ -20,7 +20,7 @@ defmodule Rbt.BackoffTest do
   def intervals(default_intervals) do
     max_bound = Enum.count(default_intervals)
 
-    let n <- integer(1, max_bound) do
+    let n <- integer(0, max_bound) do
       Enum.take(default_intervals, -n)
     end
   end
