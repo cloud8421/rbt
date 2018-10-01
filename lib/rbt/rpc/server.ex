@@ -1,7 +1,5 @@
 defmodule Rbt.Rpc.Server do
   @moduledoc """
-  ## What
-
   This module implements a RabbitMQ powered rpc server according to the topology
   expressed at: <https://www.rabbitmq.com/tutorials/tutorial-six-elixir.html>.
 
@@ -23,7 +21,7 @@ defmodule Rbt.Rpc.Server do
                   │                      │   └────────────┘
                   └──────────────────────┘
 
-  ## Usage
+  #### Usage
 
   Mount the `Rbt.Rpc.Server` in the target application:
 
@@ -35,7 +33,7 @@ defmodule Rbt.Rpc.Server do
         )
       ]
 
-  ## Implementation details
+  #### Implementation details
 
   When starting, the rpc server process declares a namespace (e.g. `auth`) that identifies
   the generic domain of things the server is capable of doing.
@@ -50,7 +48,7 @@ defmodule Rbt.Rpc.Server do
   - A `correlation_id` header, which will be sent together with the reply to allow the caller to process multiple rpcs concurrently
   - A body encoded as via `:erlang.term_to_binary/2`, representing a function call. More details in the "Payload" section.
 
-  ## Payload
+  #### Payload
 
   The expected payload is a function specification. Three forms are allowed:
 

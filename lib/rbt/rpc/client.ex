@@ -1,7 +1,5 @@
 defmodule Rbt.Rpc.Client do
   @moduledoc """
-  ## What
-
   This module implements a RabbitMQ powered rpc client according to the topology
   expressed at: <https://www.rabbitmq.com/tutorials/tutorial-six-elixir.html>.
 
@@ -23,7 +21,7 @@ defmodule Rbt.Rpc.Client do
                   │                      │   └────────────┘
                   └──────────────────────┘
 
-  ## Usage
+  #### Usage
 
   Mount the `Rbt.Rpc.Client` in the target application, giving it a name:
 
@@ -35,7 +33,7 @@ defmodule Rbt.Rpc.Client do
 
       Rbt.Rpc.Client.call(Assistant.Rabbit.Rpc.Client, "chat", {String, :upcase, ["a"]})
 
-  ## Implementation details
+  #### Implementation details
 
   When starting the rpc client declares an exclusive queue that will be auto-deleted in case the client itself crashes.
 
@@ -51,7 +49,7 @@ defmodule Rbt.Rpc.Client do
     to make sure that if multiple processes ask the client process to perform rpc calls, the client can correctly route the response
     back to each process.
 
-  ## RPC return values
+  #### RPC return values
 
   An rpc call can return:
 
