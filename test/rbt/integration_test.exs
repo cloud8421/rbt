@@ -44,10 +44,12 @@ defmodule Rbt.IntegrationTest do
       assert_receive {:on_consume, _params}
       # Can try to cancel twice
       assert {:ok, :requested} == Rbt.Consumer.cancel("test-exchange", "test-queue")
+      assert_receive {:on_cancel, _params}
       assert :ok == Rbt.Consumer.cancel("test-exchange", "test-queue")
 
       # Can try to consume twice
       assert {:ok, :requested} == Rbt.Consumer.consume("test-exchange", "test-queue")
+      assert_receive {:on_consume, _params}
       assert :ok == Rbt.Consumer.consume("test-exchange", "test-queue")
     end
 
