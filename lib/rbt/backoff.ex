@@ -4,13 +4,20 @@ defmodule Rbt.Backoff do
   @default_intervals [100, 500, 1000, 2000, 5000, 10000, 30000]
 
   @type intervals :: [pos_integer()]
+  @type map_with_intervals :: %{
+          required(:backoff_intervals) => intervals(),
+          optional(any) => any()
+        }
 
   def default_intervals, do: @default_intervals
 
+  @spec reset!(map_with_intervals()) :: map_with_intervals()
   def reset!(state) do
     %{state | backoff_intervals: @default_intervals}
   end
 
+  @spec next_interval(map_with_intervals()) ::
+          {pos_integer(), map_with_intervals()} :: {:error, :no_intervals}
   def next_interval(%{backoff_intervals: []}) do
     {:error, :no_intervals}
   end
