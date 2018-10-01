@@ -242,7 +242,8 @@ defmodule Rbt.Consumer do
     end
   end
 
-  def handle_event(:info, {task_ref, result}, :subscribed, data) when is_reference(task_ref) do
+  def handle_event(:info, {task_ref, result}, state, data)
+      when is_reference(task_ref) and state not in [:idle] do
     case result do
       {:skip, meta} ->
         ack!(data.channel, meta.delivery_tag)
