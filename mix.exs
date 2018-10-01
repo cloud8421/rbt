@@ -79,7 +79,7 @@ defmodule Rbt.MixProject do
           Rbt.Conn.URI
         ],
         Consumers: [
-          Rbt.Consumer.Topic,
+          Rbt.Consumer,
           Rbt.Consumer.Handler
         ],
         Producers: [

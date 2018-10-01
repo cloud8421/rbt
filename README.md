@@ -20,14 +20,14 @@ Work in progress, not usable yet.
 
 ## Features
 
-- [x] Topic consumers
+- [x] Consumers
   - [x] auto retries with backoff
   - [x] forward failures to separate exchange for capture
   - [x] parallelized, bounded message handling
   - [x] instrumentation hooks
   - [x] manual consume/cancel control
   - [x] multiple content types (erlang, json)
-- [x] Topic publishers
+- [x] Producers
   - [x] internal buffering in case of disconnection
   - [x] auto-fingerprint of published messages with generated uuid
   - [x] instrumentation hooks
@@ -56,7 +56,7 @@ defmodule ExampleSupervisor do
       {Rbt.Conn, uri: vhost_url, name: :prod_conn},
       {Rbt.Conn, uri: vhost_url, name: :cons_conn},
       {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
-      {Rbt.Consumer.Topic,
+      {Rbt.Consumer,
        conn_ref: :cons_conn,
        handler: MyHandler,
        definitions: %{

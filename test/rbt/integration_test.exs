@@ -19,7 +19,7 @@ defmodule Rbt.IntegrationTest do
         {Rbt.Conn, uri: vhost_url, name: :prod_conn},
         {Rbt.Conn, uri: vhost_url, name: :cons_conn},
         {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
-        {Rbt.Consumer.Topic,
+        {Rbt.Consumer,
          conn_ref: :cons_conn,
          handler: SpyHandler,
          definitions: %{
@@ -41,12 +41,12 @@ defmodule Rbt.IntegrationTest do
     test "selective consume/cancel" do
       Process.sleep(50)
       # Can try to cancel twice
-      assert {:ok, :requested} == Rbt.Consumer.Topic.cancel("test-exchange", "test-queue")
-      assert :ok == Rbt.Consumer.Topic.cancel("test-exchange", "test-queue")
+      assert {:ok, :requested} == Rbt.Consumer.cancel("test-exchange", "test-queue")
+      assert :ok == Rbt.Consumer.cancel("test-exchange", "test-queue")
 
       # Can try to consume twice
-      assert {:ok, :requested} == Rbt.Consumer.Topic.consume("test-exchange", "test-queue")
-      assert :ok == Rbt.Consumer.Topic.consume("test-exchange", "test-queue")
+      assert {:ok, :requested} == Rbt.Consumer.consume("test-exchange", "test-queue")
+      assert :ok == Rbt.Consumer.consume("test-exchange", "test-queue")
     end
 
     @tag :integration

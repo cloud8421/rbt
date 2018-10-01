@@ -53,10 +53,10 @@ defmodule Rbt.Consumer.Handler do
       }
 
       children = [
-        {Rbt.Consumer.Topic, consumer_config}
+        {Rbt.Consumer, consumer_config}
       ]
 
-  For more details on the consumer itself, see `Rbt.Consumer.Topic`.
+  For more details on the consumer itself, see `Rbt.Consumer`.
   """
 
   @typedoc """
