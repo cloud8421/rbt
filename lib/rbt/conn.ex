@@ -23,8 +23,8 @@ defmodule Rbt.Conn do
             conn: nil,
             mon_ref: nil
 
-  @typedoc "The AMQP url of the server"
-  @type url :: String.t()
+  @typedoc "The AMQP uri of the server"
+  @type uri :: String.t()
 
   @typedoc """
   A kw list representing connection options.
@@ -70,26 +70,26 @@ defmodule Rbt.Conn do
   def callback_mode, do: :state_functions
 
   @doc """
-  Starts a connection given just a url: the connection is not named, uses default options.
+  Starts a connection given just a uri: the connection is not named, uses default options.
   """
-  @spec start_link(url) :: start_ret()
-  def start_link(url) do
-    start_link(url, @default_open_opts)
+  @spec start_link(uri) :: start_ret()
+  def start_link(uri) do
+    start_link(uri, @default_open_opts)
   end
 
   @doc """
-  Starts a connection given a url and open options: the connection is not named.
+  Starts a connection given a uri and open options: the connection is not named.
   """
-  @spec start_link(url, open_opts) :: start_ret()
+  @spec start_link(uri, open_opts) :: start_ret()
   def start_link(uri, open_opts) do
     open_opts = Keyword.merge(@default_open_opts, open_opts)
     :gen_statem.start_link(__MODULE__, {uri, open_opts}, [])
   end
 
   @doc """
-  Starts a connection given url, open options and name.
+  Starts a connection given uri, open options and name.
   """
-  @spec start_link(url, open_opts, name) :: start_ret()
+  @spec start_link(uri, open_opts, name) :: start_ret()
   def start_link(uri, open_opts, name) when is_atom(name) do
     start_link(uri, open_opts, {:local, name})
   end
