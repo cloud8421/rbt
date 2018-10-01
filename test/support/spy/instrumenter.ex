@@ -57,4 +57,50 @@ defmodule Rbt.Spy.Instrumenter do
       {:reply, :ok, test_process}
     end
   end
+
+  defmodule Producer do
+    @behaviour Rbt.Instrumentation.Producer
+    use GenServer
+
+    def start_link(test_process) do
+      GenServer.start_link(__MODULE__, test_process, name: __MODULE__)
+    end
+
+    def init(test_process) do
+      {:ok, test_process}
+    end
+
+    def setup(exchange_name) do
+      GenServer.call(__MODULE__, {:setup, exchange_name})
+    end
+
+    def teardown(exchange_name) do
+      GenServer.call(__MODULE__, {:teardown, exchange_name})
+    end
+
+    def on_connect(exchange_name) do
+      GenServer.call(__MODULE__, {:on_connect, exchange_name})
+    end
+
+    def on_disconnect(exchange_name) do
+      GenServer.call(__MODULE__, {:on_disconnect, exchange_name})
+    end
+
+    def on_publish_ok(exchange_name, event, buffer_size) do
+      GenServer.call(__MODULE__, {:on_publish_ok, {exchange_name, event, buffer_size}})
+    end
+
+    def on_publish_error(exchange_name, event, error, buffer_size) do
+      GenServer.call(__MODULE__, {:on_publish_error, {exchange_name, event, error, buffer_size}})
+    end
+
+    def on_queue(exchange_name, event, buffer_size) do
+      GenServer.call(__MODULE__, {:on_queue, {exchange_name, event, buffer_size}})
+    end
+
+    def handle_call({event_name, params}, _from, test_process) do
+      send(test_process, {event_name, params})
+      {:reply, :ok, test_process}
+    end
+  end
 end

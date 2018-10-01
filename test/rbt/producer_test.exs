@@ -1,16 +1,27 @@
 defmodule Rbt.ProducerTest do
   use ExUnit.Case, async: true
 
+  alias Rbt.Spy
+
   @rmq_test_url "amqp://guest:guest@localhost:5672/rbt-test"
 
   test "resilience test" do
     {:ok, conn} = Rbt.Conn.start_link(@rmq_test_url, [], __MODULE__)
+    {:ok, _pid} = Spy.Instrumenter.Producer.start_link(self())
 
-    {:ok, pid} = Rbt.Producer.start_link(__MODULE__, %{exchange_name: "producer-exchange"})
+    {:ok, pid} =
+      Rbt.Producer.start_link(__MODULE__, %{
+        exchange_name: "producer-exchange",
+        instrumentation: Spy.Instrumenter.Producer
+      })
+
     ref = Process.monitor(pid)
     refute_receive {:DOWN, ^ref, :process, ^pid, _reason}, 300
 
     publish_sample_message(2)
+
+    assert_receive {:on_publish_ok, _params}
+    assert_receive {:on_publish_ok, _params}
 
     # active connection, buffer remains empty
 
@@ -20,6 +31,10 @@ defmodule Rbt.ProducerTest do
     Rbt.Conn.close(conn)
 
     publish_sample_message(3)
+
+    assert_receive {:on_queue, _params}
+    assert_receive {:on_queue, _params}
+    assert_receive {:on_queue, _params}
 
     # broken connection, buffer fills up
 
@@ -35,7 +50,9 @@ defmodule Rbt.ProducerTest do
 
     publish_sample_message(100)
 
-    Process.sleep(100)
+    Enum.each(1..100, fn _ ->
+      assert_receive {:on_publish_ok, _params}, 200
+    end)
 
     # connection active, buffer gets emptied
 
