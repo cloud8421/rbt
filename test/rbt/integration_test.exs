@@ -1,7 +1,7 @@
 defmodule Rbt.IntegrationTest do
   use ExUnit.Case, async: true
 
-  alias Rbt.SpyHandler
+  alias Rbt.{SpyHandler, SpyInstrumenter}
 
   defmodule ExampleSupervisor do
     use Supervisor
@@ -16,6 +16,7 @@ defmodule Rbt.IntegrationTest do
 
       children = [
         {SpyHandler, test_process},
+        {SpyInstrumenter.Consumer, test_process},
         {Rbt.Conn, uri: vhost_url, name: :prod_conn},
         {Rbt.Conn, uri: vhost_url, name: :cons_conn},
         {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
@@ -27,7 +28,8 @@ defmodule Rbt.IntegrationTest do
            queue_name: "test-queue",
            routing_keys: ["test.topic"]
          },
-         max_retries: 3}
+         max_retries: 3,
+         instrumentation: Rbt.SpyInstrumenter.Consumer}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)
@@ -39,7 +41,7 @@ defmodule Rbt.IntegrationTest do
 
     @tag :integration
     test "selective consume/cancel" do
-      Process.sleep(50)
+      assert_receive {:on_consume, _params}
       # Can try to cancel twice
       assert {:ok, :requested} == Rbt.Consumer.cancel("test-exchange", "test-queue")
       assert :ok == Rbt.Consumer.cancel("test-exchange", "test-queue")
