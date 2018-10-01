@@ -23,8 +23,12 @@ defmodule Rbt.ProducerTest do
     assert_receive {:on_publish_ok, _params}
     assert_receive {:on_publish_ok, _params}
 
+    assert :active == Rbt.Producer.status("producer-exchange").state
+    assert :active == Rbt.Producer.status(pid).state
+
     # active connection, buffer remains empty
 
+    assert 0 == Rbt.Producer.buffer_size("producer-exchange")
     assert 0 == Rbt.Producer.buffer_size(pid)
     assert [] == Rbt.Producer.buffer(pid)
 
@@ -36,8 +40,12 @@ defmodule Rbt.ProducerTest do
     assert_receive {:on_queue, _params}
     assert_receive {:on_queue, _params}
 
+    assert :buffering == Rbt.Producer.status("producer-exchange").state
+    assert :buffering == Rbt.Producer.status(pid).state
+
     # broken connection, buffer fills up
 
+    assert 3 == Rbt.Producer.buffer_size("producer-exchange")
     assert 3 == Rbt.Producer.buffer_size(pid)
 
     {:ok, _conn} = Rbt.Conn.start_link(@rmq_test_url, [], __MODULE__)
@@ -46,6 +54,7 @@ defmodule Rbt.ProducerTest do
 
     # connection is warming up (in backoff mode), buffer keeps filling up
 
+    assert 4 == Rbt.Producer.buffer_size("producer-exchange")
     assert 4 == Rbt.Producer.buffer_size(pid)
 
     publish_sample_message(100)
@@ -54,10 +63,17 @@ defmodule Rbt.ProducerTest do
       assert_receive {:on_publish_ok, _params}, 200
     end)
 
+    assert :active == Rbt.Producer.status("producer-exchange").state
+    assert :active == Rbt.Producer.status(pid).state
+
     # connection active, buffer gets emptied
 
+    assert 0 == Rbt.Producer.buffer_size("producer-exchange")
     assert 0 == Rbt.Producer.buffer_size(pid)
+    assert [] == Rbt.Producer.buffer("producer-exchange")
     assert [] == Rbt.Producer.buffer(pid)
+
+    assert :ok == Rbt.Producer.stop(pid)
   end
 
   defp publish_sample_message(number_of_times) do
