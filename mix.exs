@@ -94,6 +94,7 @@ defmodule Rbt.MixProject do
           Rbt.Producer.Sandbox
         ],
         Utils: [
+          Rbt.Backoff,
           Rbt.Data,
           Rbt.UUID
         ]

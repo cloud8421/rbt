@@ -2,11 +2,9 @@ defmodule Rbt.BackoffTest do
   use ExUnit.Case, async: true
   use PropCheck
 
-  alias Rbt.Backoff
+  doctest Rbt.Backoff
 
-  test "requires at least one interval" do
-    assert {:error, :no_intervals} = Backoff.next_interval(%{backoff_intervals: []})
-  end
+  alias Rbt.Backoff
 
   property "delay is always between bounds" do
     forall intervals <- intervals(Backoff.default_intervals()) do
