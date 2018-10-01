@@ -8,7 +8,8 @@ defmodule Rbt.Producer do
 
   @default_config %{
     durable_objects: false,
-    exchange_type: :topic
+    exchange_type: :topic,
+    instrumentation: Rbt.Instrumentation.NoOp.Producer
   }
 
   @config_keys Map.keys(@default_config)
@@ -19,8 +20,7 @@ defmodule Rbt.Producer do
             config: @default_config,
             channel: nil,
             buffer: :queue.new(),
-            backoff_intervals: Backoff.default_intervals(),
-            instrumentation: Rbt.Instrumentation.NoOp.Producer
+            backoff_intervals: Backoff.default_intervals()
 
   ################################################################################
   ################################## PUBLIC API ##################################
@@ -164,6 +164,8 @@ defmodule Rbt.Producer do
 
   def handle_event({:call, from}, {:publish, event}, :buffering, data) do
     new_buffer = :queue.in(event, data.buffer)
+
+    instrument_queue!(data, event, :queue.len(new_buffer))
     action = {:reply, from, :ok}
 
     {:keep_state, %{data | buffer: new_buffer}, action}
@@ -307,30 +309,30 @@ defmodule Rbt.Producer do
   # INSTRUMENTATION
 
   defp instrument_setup!(data) do
-    data.instrumentation.setup(data.exchange_name)
+    data.config.instrumentation.setup(data.exchange_name)
   end
 
   defp instrument_teardown!(data) do
-    data.instrumentation.teardown(data.exchange_name)
+    data.config.instrumentation.teardown(data.exchange_name)
   end
 
   defp instrument_on_connect!(data) do
-    data.instrumentation.on_connect(data.exchange_name)
+    data.config.instrumentation.on_connect(data.exchange_name)
   end
 
   defp instrument_on_disconnect!(data) do
-    data.instrumentation.on_disconnect(data.exchange_name)
+    data.config.instrumentation.on_disconnect(data.exchange_name)
   end
 
   defp instrument_publish_ok!(data, event, buffer_size) do
-    data.instrumentation.on_publish_ok(data.exchange_name, event, buffer_size)
+    data.config.instrumentation.on_publish_ok(data.exchange_name, event, buffer_size)
   end
 
   defp instrument_publish_error!(data, event, error, buffer_size) do
-    data.instrumentation.on_publish_ok(data.exchange_name, event, error, buffer_size)
+    data.config.instrumentation.on_publish_ok(data.exchange_name, event, error, buffer_size)
   end
 
   defp instrument_queue!(data, event, buffer_size) do
-    data.instrumentation.on_queue(data.exchange_name, event, buffer_size)
+    data.config.instrumentation.on_queue(data.exchange_name, event, buffer_size)
   end
 end
