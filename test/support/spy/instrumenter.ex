@@ -1,4 +1,4 @@
-defmodule Rbt.SpyInstrumenter do
+defmodule Rbt.Spy.Instrumenter do
   defmodule Consumer do
     @behaviour Rbt.Instrumentation.Consumer
     use GenServer

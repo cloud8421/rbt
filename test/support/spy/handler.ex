@@ -1,4 +1,4 @@
-defmodule Rbt.SpyHandler do
+defmodule Rbt.Spy.Handler do
   use Rbt.Consumer.Handler
   use GenServer
 

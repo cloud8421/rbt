@@ -1,7 +1,7 @@
 defmodule Rbt.IntegrationTest do
   use ExUnit.Case, async: true
 
-  alias Rbt.{SpyHandler, SpyInstrumenter}
+  alias Rbt.Spy
 
   defmodule ExampleSupervisor do
     use Supervisor
@@ -15,21 +15,21 @@ defmodule Rbt.IntegrationTest do
       test_process = Keyword.fetch!(opts, :test_process)
 
       children = [
-        {SpyHandler, test_process},
-        {SpyInstrumenter.Consumer, test_process},
+        {Spy.Handler, test_process},
+        {Spy.Instrumenter.Consumer, test_process},
         {Rbt.Conn, uri: vhost_url, name: :prod_conn},
         {Rbt.Conn, uri: vhost_url, name: :cons_conn},
         {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
         {Rbt.Consumer,
          conn_ref: :cons_conn,
-         handler: SpyHandler,
+         handler: Spy.Handler,
          definitions: %{
            exchange_name: "test-exchange",
            queue_name: "test-queue",
            routing_keys: ["test.topic"]
          },
          max_retries: 3,
-         instrumentation: Rbt.SpyInstrumenter.Consumer}
+         instrumentation: Spy.Instrumenter.Consumer}
       ]
 
       Supervisor.init(children, strategy: :one_for_one)
