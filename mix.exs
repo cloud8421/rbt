@@ -70,6 +70,7 @@ defmodule Rbt.MixProject do
         "README.md",
         "CODE_OF_CONDUCT.md"
       ],
+      before_closing_body_tag: &monospace_fix/1,
       source_ref: "v#{@version}",
       source_url: "https://github.com/cloud8421/rbt",
       groups_for_modules: [
@@ -101,5 +102,17 @@ defmodule Rbt.MixProject do
         ]
       ]
     ]
+  end
+
+  defp monospace_fix(_) do
+    # Some modules include flow charts which don't align properly
+    # with the default ExDoc font, so we override it here with a working one.
+    """
+    <style>
+      code {
+        font-family: Menlo,Courier,monospace !important;
+      }
+    </style>
+    """
   end
 end
