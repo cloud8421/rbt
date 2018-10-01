@@ -168,7 +168,7 @@ defmodule Rbt.Conn do
 
       _error ->
         # TODO: pass failure to diagnostics
-        {delay, new_data} = Backoff.next_interval(data)
+        {:ok, delay, new_data} = Backoff.next_interval(data)
         action = {:state_timeout, delay, :try_connect}
         {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     end
@@ -193,7 +193,7 @@ defmodule Rbt.Conn do
           | :keep_state_and_data
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn.pid == pid do
-      {delay, new_data} = Backoff.next_interval(data)
+      {:ok, delay, new_data} = Backoff.next_interval(data)
       action = {:state_timeout, delay, :try_connect}
       {:next_state, :disconnected, %{new_data | conn: nil, mon_ref: nil}, action}
     else

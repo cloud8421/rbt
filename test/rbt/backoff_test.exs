@@ -12,7 +12,7 @@ defmodule Rbt.BackoffTest do
     forall intervals <- intervals(Backoff.default_intervals()) do
       state = %{backoff_intervals: intervals}
 
-      {delay, new_state} = Backoff.next_interval(state)
+      {:ok, delay, new_state} = Backoff.next_interval(state)
 
       assert delay >= 100 and delay <= 30000
       assert Enum.count(new_state.backoff_intervals) >= 1

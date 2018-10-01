@@ -151,7 +151,7 @@ defmodule Rbt.Producer do
         {:next_state, :active, new_data, action}
 
       _error ->
-        {delay, new_data} = Backoff.next_interval(data)
+        {:ok, delay, new_data} = Backoff.next_interval(data)
 
         instrument_on_disconnect!(new_data)
 

@@ -130,7 +130,7 @@ defmodule Rbt.Consumer.Topic do
         {:next_state, :unsubscribed, new_data, action}
 
       _error ->
-        {delay, new_data} = Backoff.next_interval(data)
+        {:ok, delay, new_data} = Backoff.next_interval(data)
         action = {:state_timeout, delay, :try_declare}
         {:keep_state, %{new_data | channel: nil}, action}
     end
