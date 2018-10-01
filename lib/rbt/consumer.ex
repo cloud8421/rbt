@@ -14,7 +14,9 @@ defmodule Rbt.Consumer do
     max_workers: 5,
     durable_objects: false,
     max_retries: :infinity,
-    forward_failures: false
+    forward_failures: false,
+    task_supervisor: Rbt.Consumer.DefaultTaskSupervisor,
+    instrumentation: Rbt.Instrumentation.NoOp.Consumer
   }
 
   @config_keys Map.keys(@default_config)
@@ -25,9 +27,7 @@ defmodule Rbt.Consumer do
             config: @default_config,
             consumer_tag: nil,
             handler: nil,
-            backoff_intervals: Backoff.default_intervals(),
-            task_supervisor: Rbt.Consumer.DefaultTaskSupervisor,
-            instrumentation: Rbt.Instrumentation.NoOp.Consumer
+            backoff_intervals: Backoff.default_intervals()
 
   ################################################################################
   ################################## PUBLIC API ##################################
@@ -145,7 +145,7 @@ defmodule Rbt.Consumer do
   # MESSAGE HANDLING
 
   def handle_event(:info, {:basic_deliver, payload, meta}, :subscribed, data) do
-    Task.Supervisor.async_nolink(data.task_supervisor, fn ->
+    Task.Supervisor.async_nolink(data.config.task_supervisor, fn ->
       handle_delivery!(payload, meta, data)
     end)
 
@@ -459,41 +459,41 @@ defmodule Rbt.Consumer do
 
   defp instrument_setup!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.setup(exchange_name, queue_name)
+    data.config.instrumentation.setup(exchange_name, queue_name)
   end
 
   defp instrument_teardown!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.teardown(exchange_name, queue_name)
+    data.config.instrumentation.teardown(exchange_name, queue_name)
   end
 
   defp instrument_consume_ok!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_consume(exchange_name, queue_name)
+    data.config.instrumentation.on_consume(exchange_name, queue_name)
   end
 
   defp instrument_cancel_ok!(data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_cancel(exchange_name, queue_name)
+    data.config.instrumentation.on_cancel(exchange_name, queue_name)
   end
 
   defp instrument_event_skip!(event, meta, data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_event_skip(exchange_name, queue_name, event, meta)
+    data.config.instrumentation.on_event_skip(exchange_name, queue_name, event, meta)
   end
 
   defp instrument_event_ok!(event, meta, data, duration) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_event_ok(exchange_name, queue_name, event, meta, duration)
+    data.config.instrumentation.on_event_ok(exchange_name, queue_name, event, meta, duration)
   end
 
   defp instrument_event_error!(event, error, meta, data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_event_error(exchange_name, queue_name, event, meta, error)
+    data.config.instrumentation.on_event_error(exchange_name, queue_name, event, meta, error)
   end
 
   defp instrument_event_retry!(event, error, meta, data) do
     %{exchange_name: exchange_name, queue_name: queue_name} = data.definitions
-    data.instrumentation.on_event_retry(exchange_name, queue_name, event, meta, error)
+    data.config.instrumentation.on_event_retry(exchange_name, queue_name, event, meta, error)
   end
 end
