@@ -3,6 +3,8 @@ defmodule Rbt.Backoff do
 
   @default_intervals [100, 500, 1000, 2000, 5000, 10000, 30000]
 
+  @type intervals :: [pos_integer()]
+
   def default_intervals, do: @default_intervals
 
   def reset!(state) do

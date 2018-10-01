@@ -42,6 +42,14 @@ defmodule Rbt.Conn do
   @typedoc "The possible outcome of starting a connection process"
   @type start_ret :: {:ok, pid()} | {:error, term()}
 
+  @type t :: %__MODULE__{
+          open_opts: open_opts(),
+          backoff_intervals: Backoff.intervals(),
+          uri: nil | uri(),
+          conn: nil | AMQP.Connection.t(),
+          mon_ref: nil | reference()
+        }
+
   @doc """
   Implements a child specification suitable for use
   as a worker in a supervision tree.
@@ -123,6 +131,9 @@ defmodule Rbt.Conn do
 
   @doc false
   @impl true
+  @spec init({uri(), open_opts()}) ::
+          {:ok, :disconnected, t(), {:next_event, :internal, :try_connect}}
+          | {:stop, {:invalid_uri, term()}}
   def init({uri, open_opts}) do
     case ConnURI.validate(uri) do
       :ok ->
@@ -136,6 +147,9 @@ defmodule Rbt.Conn do
   end
 
   @doc false
+  @spec disconnected(:internal | :state_timeout, :try_connect, t()) ::
+          {:next_state, :connected, t()}
+          | {:next_state, :disconnected, t(), {:state_timeout, pos_integer(), :try_connect}}
   def disconnected(event_type, :try_connect, data)
       when event_type in [:internal, :state_timeout] do
     uri_with_options = ConnURI.merge_options(data.uri, data.open_opts)
@@ -161,15 +175,22 @@ defmodule Rbt.Conn do
   end
 
   @doc false
+  @spec disconnected({:call, GenServer.from()}, :get, t()) ::
+          {:keep_state_and_data, {:reply, GenServer.from(), {:error, :disconnected}}}
   def disconnected({:call, from}, :get, _data) do
     {:keep_state_and_data, {:reply, from, {:error, :disconnected}}}
   end
 
+  @spec disconnected({:call, GenServer.from()}, :close, t()) ::
+          {:stop_and_reply, :normal, {:reply, GenServer.from(), :ok}}
   def disconnected({:call, from}, :close, _data) do
     {:stop_and_reply, :normal, {:reply, from, :ok}}
   end
 
   @doc false
+  @spec connected(:info, {:DOWN, reference(), :process, pid(), term()}, t()) ::
+          {:next_state, :disconnected, t(), {:state_timeout, pos_integer(), :try_connect}}
+          | :keep_state_and_data
   def connected(:info, {:DOWN, ref, :process, pid, _reason}, data) do
     if data.mon_ref == ref and data.conn.pid == pid do
       {delay, new_data} = Backoff.next_interval(data)
@@ -180,10 +201,14 @@ defmodule Rbt.Conn do
     end
   end
 
+  @spec connected({:call, GenServer.from()}, :get, t()) ::
+          {:keep_state_and_data, {:reply, GenServer.from(), {:ok, AMQP.Connection.t()}}}
   def connected({:call, from}, :get, data) do
     {:keep_state_and_data, {:reply, from, {:ok, data.conn}}}
   end
 
+  @spec connected({:call, GenServer.from()}, :close, t()) ::
+          {:stop_and_reply, :normal, {:reply, GenServer.from(), :ok}}
   def connected({:call, from}, :close, data) do
     AMQP.Connection.close(data.conn)
     {:stop_and_reply, :normal, {:reply, from, :ok}}
