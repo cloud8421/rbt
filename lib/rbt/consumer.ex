@@ -15,6 +15,7 @@ defmodule Rbt.Consumer do
     durable_objects: false,
     max_retries: :infinity,
     forward_failures: false,
+    create_infrastructure: true,
     task_supervisor: Rbt.Consumer.DefaultTaskSupervisor,
     instrumentation: Rbt.Instrumentation.NoOp.Consumer
   }
@@ -119,7 +120,11 @@ defmodule Rbt.Consumer do
       {:ok, channel} ->
         set_prefetch_count!(channel, data.config)
         Process.monitor(channel.pid)
-        setup_infrastructure!(channel, data.definitions, data.config)
+
+        if data.config.create_infrastructure do
+          setup_infrastructure!(channel, data.definitions, data.config)
+        end
+
         action = {:next_event, :internal, :subscribe}
 
         new_data =
