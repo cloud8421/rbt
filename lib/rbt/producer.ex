@@ -70,6 +70,21 @@ defmodule Rbt.Producer do
     :gen_statem.call(via(exchange_name), :status)
   end
 
+  def topology_info(producer_ref) do
+    status = status(producer_ref)
+
+    config = Map.take(status.data.config, [:exchange_type])
+
+    %{
+      state: status.state,
+      conn_ref: status.data.conn_ref,
+      infrastructure: %{
+        exchange_name: status.data.exchange_name
+      },
+      config: config
+    }
+  end
+
   def stop(producer_ref) when is_pid(producer_ref) do
     :gen_statem.call(producer_ref, :stop)
   end

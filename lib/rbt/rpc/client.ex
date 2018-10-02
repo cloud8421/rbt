@@ -82,6 +82,21 @@ defmodule Rbt.Rpc.Client do
     :gen_statem.call(name, {:rpc_call, namespace, fun}, timeout)
   end
 
+  def status(server_ref) do
+    :gen_statem.call(server_ref, :status)
+  end
+
+  def topology_info(server_ref) do
+    {state, data} = status(server_ref)
+
+    %{
+      state: state,
+      queue_name: data.queue_name,
+      pending: Map.size(data.continuations),
+      conn_ref: data.conn_ref
+    }
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
@@ -139,6 +154,10 @@ defmodule Rbt.Rpc.Client do
     end
   end
 
+  def idle({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {:idle, data}}}
+  end
+
   def unsubscribed(:internal, :subscribe, data) do
     subscribe!(data.channel, data.queue_name)
 
@@ -150,6 +169,10 @@ defmodule Rbt.Rpc.Client do
     {:keep_state_and_data, reply}
   end
 
+  def unsubscribed({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {:unsubscribed, data}}}
+  end
+
   def subscribing(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, data) do
     {:next_state, :subscribed, %{data | consumer_tag: consumer_tag}}
   end
@@ -159,10 +182,18 @@ defmodule Rbt.Rpc.Client do
     {:keep_state_and_data, reply}
   end
 
+  def subscribing({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {:subscribing, data}}}
+  end
+
   def subscribed({:call, from}, {:rpc_call, namespace, fun}, data) do
     correlation_id = publish_rpc_call!(namespace, fun, data)
 
     {:keep_state, add_continuation(data, namespace, correlation_id, from)}
+  end
+
+  def subscribed({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {:subscribed, data}}}
   end
 
   def subscribed(:info, {:basic_deliver, payload, meta}, data) do

@@ -139,6 +139,23 @@ defmodule Rbt.Conn do
     :gen_statem.call(ref, :status)
   end
 
+  @doc """
+  Gets the topology information of a given connection.
+  """
+  @spec topology_info(server_ref()) ::
+          %{state: :connected | :disconnected, name: GenServer.name()} | no_return()
+  def topology_info(ref) do
+    {name, state} = status(ref)
+
+    case name do
+      {:local, atom_name} ->
+        %{name: atom_name, state: state}
+
+      other ->
+        %{name: other, state: state}
+    end
+  end
+
   @doc false
   @impl true
   @spec init({uri(), open_opts(), nil | GenServer.name()}) ::

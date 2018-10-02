@@ -91,6 +91,9 @@ defmodule Rbt.MixProject do
           Rbt.Rpc.Client
         ],
         Instrumentation: ~r/Instrumentation/,
+        Introspection: [
+          Rbt.Topology
+        ],
         Testing: [
           Rbt.Producer.Sandbox
         ],

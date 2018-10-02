@@ -35,6 +35,7 @@ ALPHA stage, usable with some extra care.
   - [x] test helpers
 - [x] RPC server
 - [x] RPC client
+- [x] Runtime topology information
 - [ ] Complete docs
   - [x] Installation and configuration
   - [x] Basic supervision tree setup

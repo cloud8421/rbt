@@ -81,6 +81,21 @@ defmodule Rbt.Rpc.Server do
     :gen_statem.start_link(__MODULE__, {conn_ref, namespace, config}, [])
   end
 
+  def status(server_ref) do
+    :gen_statem.call(server_ref, :status)
+  end
+
+  def topology_info(server_ref) do
+    {state, data} = status(server_ref)
+
+    %{
+      state: state,
+      conn_ref: data.conn_ref,
+      namespace: data.namespace,
+      max_workers: data.max_workers
+    }
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
@@ -235,6 +250,12 @@ defmodule Rbt.Rpc.Server do
     end
 
     :keep_state_and_data
+  end
+
+  # INTROSPECTION
+
+  def handle_event({:call, from}, :status, state, data) do
+    {:keep_state_and_data, {:reply, from, {state, data}}}
   end
 
   def terminate(_reason, _state, data) do

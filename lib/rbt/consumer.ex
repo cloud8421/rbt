@@ -69,6 +69,18 @@ defmodule Rbt.Consumer do
     :gen_statem.call(consumer_ref, :status)
   end
 
+  def topology_info(consumer_ref) do
+    status = status(consumer_ref)
+    config = Map.take(status.data.config, [:forward_failures, :max_retries, :max_workers])
+
+    %{
+      state: status.state,
+      conn_ref: status.data.conn_ref,
+      infrastructure: status.data.definitions,
+      config: config
+    }
+  end
+
   ################################################################################
   ################################## CALLBACKS ###################################
   ################################################################################
