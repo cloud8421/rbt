@@ -9,6 +9,7 @@ defmodule Rbt.Producer do
   @default_config %{
     durable_objects: false,
     exchange_type: :topic,
+    create_infrastructure: true,
     instrumentation: Rbt.Instrumentation.NoOp.Producer
   }
 
@@ -136,7 +137,7 @@ defmodule Rbt.Producer do
       {:ok, channel} ->
         mon_ref = Process.monitor(channel.pid)
 
-        declare_exchange!(channel, data.exchange_name, data.config)
+        maybe_create_infrastructure!(channel, data.exchange_name, data.config)
 
         new_data =
           data
@@ -273,12 +274,16 @@ defmodule Rbt.Producer do
   ################################### PRIVATE ####################################
   ################################################################################
 
-  defp declare_exchange!(_channel, :default, _config), do: :ok
+  defp maybe_create_infrastructure!(_channel, :default, _config), do: :ok
 
-  defp declare_exchange!(channel, exchange_name, config) do
-    durable = Map.fetch!(config, :durable_objects)
+  defp maybe_create_infrastructure!(channel, exchange_name, config) do
+    if config.create_infrastructure do
+      durable = Map.fetch!(config, :durable_objects)
 
-    :ok = AMQP.Exchange.declare(channel, exchange_name, config.exchange_type, durable: durable)
+      :ok = AMQP.Exchange.declare(channel, exchange_name, config.exchange_type, durable: durable)
+    else
+      :ok
+    end
   end
 
   # PUBLISHING
