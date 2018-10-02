@@ -20,6 +20,7 @@ defmodule Rbt.Conn do
   defstruct open_opts: @default_open_opts,
             backoff_intervals: Backoff.default_intervals(),
             uri: nil,
+            name: nil,
             conn: nil,
             mon_ref: nil
 
@@ -46,6 +47,7 @@ defmodule Rbt.Conn do
           open_opts: open_opts(),
           backoff_intervals: Backoff.intervals(),
           uri: nil | uri(),
+          name: nil | name(),
           conn: nil | AMQP.Connection.t(),
           mon_ref: nil | reference()
         }
@@ -91,7 +93,7 @@ defmodule Rbt.Conn do
   @spec start_link(uri, open_opts) :: start_ret()
   def start_link(uri, open_opts) do
     open_opts = Keyword.merge(@default_open_opts, open_opts)
-    :gen_statem.start_link(__MODULE__, {uri, open_opts}, [])
+    :gen_statem.start_link(__MODULE__, {uri, open_opts, nil}, [])
   end
 
   @doc """
@@ -104,7 +106,7 @@ defmodule Rbt.Conn do
 
   def start_link(uri, open_opts, name) do
     open_opts = Keyword.merge(@default_open_opts, open_opts)
-    :gen_statem.start_link(name, __MODULE__, {uri, open_opts}, [])
+    :gen_statem.start_link(name, __MODULE__, {uri, open_opts, name}, [])
   end
 
   @doc """
@@ -129,16 +131,24 @@ defmodule Rbt.Conn do
     :gen_statem.call(ref, :close)
   end
 
+  @doc """
+  Gets the status of a given connection.
+  """
+  @spec status(server_ref()) :: {name(), :connected | :disconnected} | no_return()
+  def status(ref) do
+    :gen_statem.call(ref, :status)
+  end
+
   @doc false
   @impl true
-  @spec init({uri(), open_opts()}) ::
+  @spec init({uri(), open_opts(), nil | GenServer.name()}) ::
           {:ok, :disconnected, t(), {:next_event, :internal, :try_connect}}
           | {:stop, {:invalid_uri, term()}}
-  def init({uri, open_opts}) do
+  def init({uri, open_opts, name}) do
     case ConnURI.validate(uri) do
       :ok ->
         action = {:next_event, :internal, :try_connect}
-        data = %__MODULE__{open_opts: open_opts, uri: uri}
+        data = %__MODULE__{open_opts: open_opts, uri: uri, name: name}
         {:ok, :disconnected, data, action}
 
       {:error, reason} ->
@@ -187,6 +197,12 @@ defmodule Rbt.Conn do
     {:stop_and_reply, :normal, {:reply, from, :ok}}
   end
 
+  @spec disconnected({:call, GenServer.from()}, :status, t()) ::
+          {:keep_state_and_data, {:reply, GenServer.from(), {GenServer.name(), :disconnected}}}
+  def disconnected({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {data.name, :disconnected}}}
+  end
+
   @doc false
   @spec connected(:info, {:DOWN, reference(), :process, pid(), term()}, t()) ::
           {:next_state, :disconnected, t(), {:state_timeout, pos_integer(), :try_connect}}
@@ -212,5 +228,11 @@ defmodule Rbt.Conn do
   def connected({:call, from}, :close, data) do
     AMQP.Connection.close(data.conn)
     {:stop_and_reply, :normal, {:reply, from, :ok}}
+  end
+
+  @spec connected({:call, GenServer.from()}, :status, t()) ::
+          {:keep_state_and_data, {:reply, GenServer.from(), {GenServer.name(), :connected}}}
+  def connected({:call, from}, :status, data) do
+    {:keep_state_and_data, {:reply, from, {data.name, :connected}}}
   end
 end
