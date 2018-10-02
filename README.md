@@ -36,6 +36,21 @@ ALPHA stage, usable with some extra care.
 - [x] RPC server
 - [x] RPC client
 - [ ] Complete docs
+  - [x] Installation and configuration
+  - [x] Basic supervision tree setup
+  - [ ] Content types
+  - [ ] Working with consumers
+  - [ ] Working with producers
+  - [ ] Permanent failure handling
+  - [ ] Manual consume/cancel
+  - [x] Testing a consumer
+  - [ ] Testing a producer
+  - [ ] Instrumentation
+  - [ ] Correlation IDs
+  - [ ] Custom topologies
+  - [ ] Manage bindings
+  - [ ] RPC servers
+  - [ ] RPC clients
 
 ## Installation
 
