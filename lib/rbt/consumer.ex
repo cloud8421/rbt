@@ -79,7 +79,7 @@ defmodule Rbt.Consumer do
     config = Enum.into(opts, @default_config)
 
     %{
-      id: opts,
+      id: {__MODULE__, opts},
       start: {__MODULE__, :start_link, [conn_ref, handler, config]},
       type: :worker,
       restart: :permanent,
