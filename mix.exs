@@ -22,10 +22,7 @@ defmodule Rbt.MixProject do
       deps: deps(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [coveralls: :test],
-      dialyzer_warnings: [:error_handling, :race_conditions, :unknown],
-      dialyzer_ignored_warnings: [
-        {:warn_contract_supertype, :_, {:extra_range, [:_, :__protocol__, 1, :_, :_]}}
-      ]
+      dialyzer: [plt_add_apps: [:jason]]
     ]
   end
 
@@ -46,7 +43,7 @@ defmodule Rbt.MixProject do
       {:ranch_proxy_protocol, "~> 2.0", override: true},
       {:amqp, "~> 1.0"},
       {:jason, "~> 1.0", optional: true},
-      {:dialyzex, "~> 1.2", only: :dev},
+      {:dialyxir, "~> 1.0.0-rc.3", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:propcheck, "~> 1.1", only: :test},
       {:excoveralls, "~> 0.10.1", only: :test, runtime: false}
