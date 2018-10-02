@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/cloud8421/rbt.svg?branch=master)](https://travis-ci.org/cloud8421/rbt)
 [![Coverage Status](https://coveralls.io/repos/github/cloud8421/rbt/badge.svg?branch=master)](https://coveralls.io/github/cloud8421/rbt?branch=master)
 
-Work in progress, not usable yet.
+ALPHA stage, usable with some extra care.
 
 ## Guidelines
 
@@ -36,6 +36,33 @@ Work in progress, not usable yet.
 - [x] RPC server
 - [x] RPC client
 - [ ] Complete docs
+
+## Installation
+
+The package can be installed by adding `rbt` to your list of dependencies in `mix.exs` with the custom github url:
+
+```elixir
+def deps do
+  [
+    {:rbt, github: "cloud8421/rbt", tag: "v0.3.0"},
+    {:jason, "~> 1.1"}, # optional, but needed to support json-encoded messages
+  ]
+end
+```
+
+## Global configuration
+
+As one of the goals of the library is remove hidden configuration as much as possible, it only supports a limited set of options that
+influence compilation. For example:
+
+```elixir
+  config :rbt,
+    json_adapter: Jason # default, can be omitted
+```
+
+Options:
+  - `json_adapter` (defaults to `Jason`): which adapter to use to encode and decode json data. See the docs for `Rbt.Data` for more details,
+  but in general the adapter has to expose `decode/1` and `encode/1` functions. In both instances, the expected return values are either `{:ok, result}` or `{:error, reason}`. 
 
 ## Usage
 

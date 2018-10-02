@@ -16,7 +16,9 @@ defmodule Rbt.Data do
 
   Uses [Jason](https://hex.pm/packages/jason) by default.
 
-  The adapter needs to expose `decode/1` and `encode/1` functions.
+  The adapter needs to expose `decode/1` and `encode/1` functions.  In both
+  instances, the expected return values are either `{:ok, result}` or `{:error,
+  reason}`.
   """
 
   @json_adapter Application.get_env(:rbt, :json_adapter, Jason)
