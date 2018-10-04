@@ -1,6 +1,6 @@
 defmodule Rbt.Binding do
   @moduledoc """
-  Define bindings between RabbitMQ objects.
+  Contains functions to declare bindings between RabbitMQ objects.
   """
 
   @type exchange_name :: String.t()
