@@ -31,6 +31,7 @@ defmodule Rbt.TopologyTest do
            queue_name: "topo-test-queue",
            routing_keys: ["topo-test.topic"]
          },
+         create_infrastructure: true,
          max_retries: 3}
       ]
 

@@ -28,6 +28,7 @@ defmodule Rbt.IntegrationTest do
            queue_name: "test-queue",
            routing_keys: ["test.topic"]
          },
+         create_infrastructure: true,
          max_retries: 3,
          instrumentation: Spy.Instrumenter.Consumer}
       ]

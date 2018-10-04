@@ -15,7 +15,7 @@ defmodule Rbt.Consumer do
     durable_objects: false,
     max_retries: :infinity,
     forward_failures: false,
-    create_infrastructure: true,
+    create_infrastructure: false,
     task_supervisor: Rbt.Consumer.DefaultTaskSupervisor,
     instrumentation: Rbt.Instrumentation.NoOp.Consumer
   }
