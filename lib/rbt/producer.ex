@@ -9,7 +9,7 @@ defmodule Rbt.Producer do
   @default_config %{
     durable_objects: false,
     exchange_type: :topic,
-    create_infrastructure: true,
+    create_infrastructure: false,
     instrumentation: Rbt.Instrumentation.NoOp.Producer
   }
 

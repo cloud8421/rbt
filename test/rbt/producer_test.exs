@@ -12,7 +12,8 @@ defmodule Rbt.ProducerTest do
     {:ok, pid} =
       Rbt.Producer.start_link(__MODULE__, %{
         exchange_name: "producer-exchange",
-        instrumentation: Spy.Instrumenter.Producer
+        instrumentation: Spy.Instrumenter.Producer,
+        create_infrastructure: true
       })
 
     ref = Process.monitor(pid)
