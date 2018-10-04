@@ -21,8 +21,8 @@ defmodule Rbt.ProducerTest do
 
     publish_sample_message(2)
 
-    assert_receive {:on_publish_ok, _params}
-    assert_receive {:on_publish_ok, _params}
+    assert_receive {:on_publish_ok, _params}, 200
+    assert_receive {:on_publish_ok, _params}, 200
 
     assert :active == Rbt.Producer.status("producer-exchange").state
     assert :active == Rbt.Producer.status(pid).state
@@ -37,9 +37,9 @@ defmodule Rbt.ProducerTest do
 
     publish_sample_message(3)
 
-    assert_receive {:on_queue, _params}
-    assert_receive {:on_queue, _params}
-    assert_receive {:on_queue, _params}
+    assert_receive {:on_queue, _params}, 200
+    assert_receive {:on_queue, _params}, 200
+    assert_receive {:on_queue, _params}, 200
 
     assert :buffering == Rbt.Producer.status("producer-exchange").state
     assert :buffering == Rbt.Producer.status(pid).state

@@ -29,7 +29,7 @@ defmodule Rbt.Producer.SandboxTest do
           send(caller, :done)
         end)
 
-      assert_receive :done
+      assert_receive :done, 200
       assert [] == Sandbox.find_by_exchange(exchange_name)
       assert 0 == Sandbox.count_by_exchange(exchange_name)
       assert [event] = Sandbox.find_by_exchange(exchange_name, pid)
@@ -61,7 +61,7 @@ defmodule Rbt.Producer.SandboxTest do
           send(caller, :done)
         end)
 
-      assert_receive :done
+      assert_receive :done, 200
       assert [] == Sandbox.find_by_exchange_and_topic(exchange_name, topic)
       assert 0 == Sandbox.count_by_exchange_and_topic(exchange_name, topic)
       assert [] == Sandbox.find_by_exchange_and_topic(exchange_name, topic <> "2")

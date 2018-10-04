@@ -45,15 +45,15 @@ defmodule Rbt.IntegrationTest do
 
     @tag :integration
     test "selective consume/cancel" do
-      assert_receive {:on_consume, _params}
+      assert_receive {:on_consume, _params}, 200
       # Can try to cancel twice
       assert {:ok, :requested} == Rbt.Consumer.cancel("test-exchange", "test-queue")
-      assert_receive {:on_cancel, _params}
+      assert_receive {:on_cancel, _params}, 200
       assert :ok == Rbt.Consumer.cancel("test-exchange", "test-queue")
 
       # Can try to consume twice
       assert {:ok, :requested} == Rbt.Consumer.consume("test-exchange", "test-queue")
-      assert_receive {:on_consume, _params}
+      assert_receive {:on_consume, _params}, 200
       assert :ok == Rbt.Consumer.consume("test-exchange", "test-queue")
     end
 
@@ -67,7 +67,7 @@ defmodule Rbt.IntegrationTest do
           content_type: "application/json"
         )
 
-      assert_receive :success
+      assert_receive :success, 200
     end
 
     @tag :integration
@@ -80,7 +80,7 @@ defmodule Rbt.IntegrationTest do
           content_type: "application/json"
         )
 
-      assert_receive :no_retry
+      assert_receive :no_retry, 200
     end
 
     @tag :integration
@@ -93,7 +93,7 @@ defmodule Rbt.IntegrationTest do
           content_type: "application/json"
         )
 
-      assert_receive :skip
+      assert_receive :skip, 200
     end
   end
 
