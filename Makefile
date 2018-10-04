@@ -1,6 +1,10 @@
 RMQ_CURL := curl -i -u "guest:guest"
 RMQ_API := http://localhost:15672/api
 
+test: rmq-reset
+	mix test
+.PHONY: test
+
 rmq-reset: rmq-delete rmq-create
 .PHONY: rmq-reset
 
