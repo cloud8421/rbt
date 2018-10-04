@@ -7,7 +7,7 @@ ALPHA stage, usable with some extra care.
 
 ## Guidelines
 
-- Self-configuring topology
+- Opt-in, self-configuring topology
 - Small, explicit and composable building blocks
 - Configuration only for compile-time variables (e.g. which JSON decoder to use)
 - Always pass down configuration from the top, e.g. application -> supervisor -> single worker
@@ -98,7 +98,10 @@ defmodule ExampleSupervisor do
     children = [
       {Rbt.Conn, uri: vhost_url, name: :prod_conn},
       {Rbt.Conn, uri: vhost_url, name: :cons_conn},
-      {Rbt.Producer, conn_ref: :prod_conn, definitions: %{exchange_name: "test-exchange"}},
+      {Rbt.Producer, 
+       conn_ref: :prod_conn,
+       definitions: %{exchange_name: "test-exchange"},
+       create_infrastructure: true},
       {Rbt.Consumer,
        conn_ref: :cons_conn,
        handler: MyHandler,
@@ -107,6 +110,7 @@ defmodule ExampleSupervisor do
          queue_name: "test-queue",
          routing_keys: ["test.topic"]
        },
+       create_infrastructure: true,
        max_retries: 3}
     ]
 
