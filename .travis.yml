@@ -12,3 +12,6 @@ before_script:
   - sudo rabbitmqctl set_permissions -p rbt-test guest ".*" ".*" ".*"
 script:
   - mix do deps.get, coveralls.travis
+cache:
+  directories:
+    - _build/test
