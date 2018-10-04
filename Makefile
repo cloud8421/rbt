@@ -15,3 +15,7 @@ rmq-create:
 rmq-delete:
 	$(RMQ_CURL) -X DELETE $(RMQ_API)/vhosts/rbt-test
 .PHONY: rmq-delete
+
+dialyzer-fast:
+	mix dialyzer --no-check
+.PHONY: dialyzer-fast
