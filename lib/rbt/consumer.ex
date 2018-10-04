@@ -1,4 +1,79 @@
 defmodule Rbt.Consumer do
+  @moduledoc """
+  Defines a consumer process, which will:
+
+  - open a channel with the RabbitMQ server
+  - enforce controlled consumption via the usage of the `prefetch_count`
+    channel property (see the Capacity Planning section for more details)
+  - ensure parallelized consumption via usage of supervised tasks
+  - (optionally) declare its own topology (exchange, queue and binding, see the
+    Topology section for more details)
+  - (optionally) support retry and permanent failure management (see the Retry
+    and Failure section for more details)
+
+  #### Topology
+
+  A `Rbt.Consumer` worker is able to define and create the topology needed to
+  support its configuration, however it won't do that by default, requiring you
+  to explicitly pass `create_infrastructure: true` when started to enable that.
+
+  This means that it's up to the developer to manage the lifetime of the queue
+  referenced in the configuration.
+
+  With `create_infrastructure: true`, the consumer will create:
+
+  - a topic exchange (the "source" exchange)
+  - a topic exchange with the same name and `-retries` suffix (the "retries" exchange)
+  - a dedicated queue
+  - bindings between each exchange and the queue according to the routing keys specified
+    in the configuration
+
+  In addition, if the consumer is setup with `forward_failures: true`, a third
+  exchange with the same name and `-errors` suffix (the "failures" exchange)
+  will be created.
+
+  For safety reasons, RabbitMQ doesn't allow re-declaration of the same object
+  with different properties (e.g. re-declaring a queue with a different
+  `durable` flag). `Rbt.Consumer` follows the same idea, pushing the design towards
+  immutable queues which would need to be migrated with new names (making zero-downtime
+  deployment on multiple servers easier to manage).
+
+  #### Capacity planning
+
+  Each consumer sets its own `prefetch_count` property on its channel.
+
+  This way, a single consumer can define how many messages can be handled at
+  any given time.
+
+  Handling is parallelized via the usage of tasks: assuming a `prefetch_count`
+  value of 5, a maximum of 5 tasks at any given time are spawned to handle
+  incoming messages.
+
+  Tasks are supervised, by default under a `Task.Supervisor` process named
+  `Rbt.Consumer.DefaultTaskSupervisor`. It's possible to use a different one
+  simply by passing `task_supervisor: <name-of-the-new-supervisor>` to the
+  starting configuration of the consumer. Note that the new `Task.Supervisor`
+  needs to be started (see the relevant `Task.Supervisor` docs for details).
+
+  #### Retry and Failure
+
+  Assuming the consumer manages its own topology, it's possible to control:
+
+  - retry behaviour: how many times should the consumer attempt to process this
+    message?
+  - forward failures: after deciding that it's not possible to handle the
+    message or reaching the maximum amount of allowed retries, what should the
+    consumer do with the message?
+
+  In case `forward_failures` is set to `true`, the queue associated with the consumer
+  is setup with a dead-letter-exchange flag. In case of permanent failure, the
+  message gets rejected, triggering the dead-lettering rule. It will be forwarded to
+  the "failures" exchange.
+
+  This opens the possibility of creating an infrastructure of queues and consumers that
+  would process failures published on "failures" exchanges.
+  """
+
   @behaviour :gen_statem
 
   alias Rbt.{Channel, Backoff, Consumer.Deliver}
