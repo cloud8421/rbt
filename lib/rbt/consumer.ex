@@ -151,6 +151,17 @@ defmodule Rbt.Consumer do
           backoff_intervals: Backoff.intervals()
         }
 
+  @type topology_info :: %{
+          state: atom(),
+          conn_ref: Rbt.Conn.name(),
+          infrastructure: definitions(),
+          config: %{
+            forward_failures: boolean(),
+            max_retries: pos_integer() | :infinity,
+            max_workers: pos_integer()
+          }
+        }
+
   ################################################################################
   ################################## PUBLIC API ##################################
   ################################################################################
@@ -226,16 +237,7 @@ defmodule Rbt.Consumer do
   @doc """
   Returns the topology information for a consumer (defined by its pid).
   """
-  @spec topology_info(GenServer.name()) :: %{
-          state: atom(),
-          conn_ref: Rbt.Conn.name(),
-          infrastructure: definitions(),
-          config: %{
-            forward_failures: boolean(),
-            max_retries: pos_integer() | :infinity,
-            max_workers: pos_integer()
-          }
-        }
+  @spec topology_info(GenServer.name()) :: topology_info()
   def topology_info(consumer_ref) do
     status = status(consumer_ref)
     config = Map.take(status.data.config, [:forward_failures, :max_retries, :max_workers])
