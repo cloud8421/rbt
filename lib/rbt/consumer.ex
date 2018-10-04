@@ -108,6 +108,23 @@ defmodule Rbt.Consumer do
   @type exchange_name :: String.t()
   @type queue_name :: String.t()
 
+  @typedoc """
+  Represents runtime configuration for the consumer.
+
+  - `max_workers`: used to set `prefetch_count` and maximum number
+    of spawned tasks to handle incoming messages.
+  - `durable_objects`: defines if RabbitMQ objects need to be created
+  with a durable flag.
+  - `max_retries`: used to control the maximum number of retries
+    before the message is rejected.
+  - `forward_failures`: used to control dead-lettering of the message
+    in case of rejection.
+  - `create_infrastructure`: used to instruct the consumer to create
+    RabbitMQ objects or simply assume their existence.
+  - `task_supervisor`: used to pass a different `TaskSupervisor` name.
+  - `instrumentation`: used to pass a different instrumentation module
+    (see `Rbt.Instrumentation` for more details).
+  """
   @type config :: %{
           max_workers: pos_integer(),
           durable_objects: boolean(),
