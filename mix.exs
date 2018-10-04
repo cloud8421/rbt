@@ -1,7 +1,7 @@
 defmodule Rbt.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.4.0"
   @description """
   NOT COMPLETE OR PRODUCTION READY. A set of higher level tools to compose RabbitMQ workflows.
   """
