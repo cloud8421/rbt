@@ -1,5 +1,8 @@
 defmodule Rbt.Producer.Event do
-  @moduledoc false
+  @moduledoc """
+  In memory representation of a message that
+  can be published via a producer.
+  """
 
   defstruct message_id: nil,
             topic: nil,
