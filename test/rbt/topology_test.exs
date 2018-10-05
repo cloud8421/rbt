@@ -60,7 +60,7 @@ defmodule Rbt.TopologyTest do
                      queue_name: "topo-test-queue",
                      routing_keys: ["topo-test.topic"]
                    },
-                   state: :subscribing
+                   state: consumer_state
                  }
                ],
                Rbt.Producer => [
@@ -68,7 +68,7 @@ defmodule Rbt.TopologyTest do
                    config: %{exchange_type: :topic},
                    conn_ref: :topo_prod_conn,
                    infrastructure: %{exchange_name: "topo-test-exchange"},
-                   state: :active
+                   state: producer_state
                  }
                ],
                Rbt.Rpc.Client => [
@@ -76,7 +76,7 @@ defmodule Rbt.TopologyTest do
                    conn_ref: :topo_rpc_client_conn,
                    pending: 0,
                    queue_name: _queue_name,
-                   state: :subscribed
+                   state: rpc_client_state
                  }
                ],
                Rbt.Rpc.Server => [
@@ -84,10 +84,15 @@ defmodule Rbt.TopologyTest do
                    conn_ref: :topo_rpc_server_conn,
                    max_workers: 20,
                    namespace: "rbt-topo-rpc-server-test",
-                   state: :ready
+                   state: rpc_server_state
                  }
                ]
              } = Rbt.Topology.for_supervisor(sup)
+
+      assert consumer_state in [:subscribing, :subscribed]
+      assert producer_state in [:buffering, :active]
+      assert rpc_client_state in [:subscribing, :subscribed]
+      assert rpc_server_state in [:idle, :ready]
     end
   end
 
