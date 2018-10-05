@@ -154,13 +154,10 @@ defmodule Rbt.Rpc.Server do
           |> Map.put(:mon_ref, mon_ref)
           |> Map.put(:channel, channel)
 
-        # instrument_on_connect!(new_data)
         {:keep_state, new_data}
 
       _error ->
         {:ok, delay, new_data} = Backoff.next_interval(data)
-
-        # instrument_on_disconnect!(new_data)
 
         action = {:state_timeout, delay, :try_declare}
         {:keep_state, %{new_data | channel: nil, mon_ref: nil}, action}
@@ -170,7 +167,6 @@ defmodule Rbt.Rpc.Server do
   # SERVER SENT CONFIRMATIONS
 
   def handle_event(:info, {:basic_consume_ok, %{consumer_tag: consumer_tag}}, :idle, data) do
-    # instrument_consume_ok!(data)
     {:next_state, :ready, %{data | consumer_tag: consumer_tag}}
   end
 
@@ -178,7 +174,6 @@ defmodule Rbt.Rpc.Server do
 
   def handle_event(:info, {:DOWN, ref, :process, pid, _reason}, _state, data) do
     if data.mon_ref == ref and data.channel.pid == pid do
-      # instrument_on_disconnect!(data)
       action = {:next_event, :internal, :try_declare}
 
       new_data =
